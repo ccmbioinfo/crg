@@ -1,35 +1,79 @@
-# Steps:
+# Installation
+  * bcbio installed with PATH and PYTHONPATH set.
+  * crg and crt cloned to ~/crg and ~/crt and added to PATH.
+
+# Usage
+
+0. Create a bed file for small and structural variants prioritization
+	* request a list of ensembl_ids for genes
+	* if a gene list comes from Phetotips:\
+```Rscript ~/bioscripts/genes.R phenotips_hpo2gene_coordinates phenotips_hpo.tsv```. Stringr should be >=1.4.
+	* or use [genes.R](https://github.com/naumenko-sa/bioscripts/blob/master/genes.R) in a custom case
+	* Some genes might be missing (don't have ENS IDs in a phenotips tsv file, they are reported by script, you can try ~/cre/data/missing_genes_grch37.bed or GeneCards/Ensembl resources to find them).
+	* sort and merge with bedtools\
+	```
+	bedtools sort -i unsorted.bed > sorted.bed
+	bedtools merge -i sorted.bed > project.bed
+	```
+	* result is project.bed
+
 1. Align reads vs GRCh37 reference with decoy
-  * Create a project(=case=family) dir: `mkdir -p project/input`
-  * Copy/symlink input file(s) to project/input:  project_sample.bam, or project_sample_1.fq.gz and project_sample_2.fq.gz
-  * Create bcbio project: `crg.prepare_bcbio_run.sh project align_decoy`
-  * Run bcbio project: `qsub ~/cre/bcbio.pbs -v project=project`\
-	For multiple projects create list of projects in projects.txt and run `qsub -t 1-N ~/cre/bcbio.array.pbs`\ where N = number of projects.
+	* Create a project(=case=family) dir:\
+	`mkdir -p project/input`
+	* Copy/symlink input file(s) to project/input: project_sample.bam, or project_sample_1.fq.gz and project_sample_2.fq.gz
+	* Create bcbio project:\
+	`crg.prepare_bcbio_run.sh project align_decoy`
+	* Run bcbio project:\
+	`qsub ~/cre/bcbio.pbs -v project=project`\
+	For multiple projects create list of projects in projects.txt and run\
+	`qsub -t 1-N ~/cre/bcbio.array.pbs`\
+	where N = number of projects.
+	* To speed up the process, run one project per sample.
 
-2. Remove decoy reads: `qsub ~/cre/cre.bam.remove_decoy_reads.sh -v bam=$bam`. Keep original bam with decoy reads to store data.
+2. Remove decoy reads:\
+`qsub ~/cre/cre.bam.remove_decoy_reads.sh -v bam=$bam`.\
+Keep original bam with decoy reads to store all data.\
+Some SV callers (manta) are sensitive to reads mapped to decoy even with one mate.
 
-3. Call small and structural variants
- 	* Create a project dir: `mkdir -p project/input`
- 	* Move bam file(s) from step1 to project/input: project_sample.bam 
- 	* Create bcbio project: `crg.prepare_bcbio_run.sh project no_align`
-	* Run bcbio:  `qsub ~/cre/bcbio.pbs -v project=project`
+3. Call small variants
+ 	* Create a project dir:\
+ 	`mkdir -p project/input`
+ 	* Symlink bam file(s) from step1 to project/input: project_sample.bam Small variant calling is not sensitive to the presense of decoy reads.
+ 	* Create bcbio project:\
+ 	`crg.prepare_bcbio_run.sh project no_align`
+	* Run bcbio:\
+	`qsub ~/cre/bcbio.pbs -v project=project`
+	* Clean up bcbio project:\
+	`qsub ~/cre/cre.sh -v family=<project>,cleanup=1,make_report=0,type=wgs`
 
-4. Clean up bcbio run: `qsub ~/cre/cre.sh -v family=<project>,cleanup=1,make_report=0,type=wgs`
-
-5. Excel reports for small variants.
-	* coding report: `qsub ~/cre/cre.sh -v family=project`
+4. Create excel reports for small variants.
+	* coding report:\
+	`qsub ~/cre/cre.sh -v family=project`
 	* noncoding variants for gene panels: 
-		- create a bed file for a set of genes with [genes.R](~/bioscripts/genes.R)
-		- subset variants: `bedtools intersect --header -a project-ensemble.vcf.gz -b panel.bed > project.panel.vcf.gz`
-		- strip annotations: `~/cre/cre.annotation.strip.sh`
-		- annotate variants in panels and create gemini.db: `qsub ~/cre/cre.vcf2cre.sh -v original_vcf=project.panel.vcf.gz,project=project `
-		- build report: `qsub ~/cre/cre.sh -f family=project,type=wgs`
+		- subset variants:\
+		`bedtools intersect --header -a project-ensemble.vcf.gz -b panel.bed > project.panel.vcf.gz`
+		- reannotate variants in panels and create gemini.db:\
+		`qsub ~/cre/cre.vcf2cre.sh -v original_vcf=project.panel.vcf.gz,project=project `
+		- build report:\
+		`qsub ~/cre/cre.sh -f family=project,type=wgs`
 	* noncoding variants for gene panels with flank
-		- modify bed file, add 100k bp to each gene start and end: `cat panel.bed | awk -F "\t" '{print $1"\t"$2-100000"\t"$3+100000'`
+		- modify bed file, add 100k bp to each gene start and end:\
+		`cat panel.bed | awk -F "\t" '{print $1"\t"$2-100000"\t"$3+100000'`
 		- proceed as for noncoding small variant report
 	* de-novo variants for trios
 
-6. Excel reports for structural variants  ([Report columns](https://docs.google.com/document/d/1o870tr0rcshoae_VkG1ZOoWNSAmorCZlhHDpZuZogYE/edit?usp=sharing))
+5. Call structural variants (in parallel with step 3)
+	* MetaSV calls spades - a genome assembler, for every SV, making bcbio run computationally intensive. To speed up use sv_regions.bed and call samples individually. They are combined downstream during report generation.
+	* Create project dir:\
+	`mkdir -p project/input`
+	* Symlink a bam file. from step 2 to project/input: project_sample.bam.
+	* Copy project.bed to project.input
+	* Create bcbio project:\
+	`crg.prepare_bcbio_run.sh project sv project/input/sv_regions.bed`\
+	* Run bcbio:\
+	`qsub ~/cre/bcbio.pbs -v project=project`
+
+6. Create excel reports for structural variants  ([Report columns](https://docs.google.com/document/d/1o870tr0rcshoae_VkG1ZOoWNSAmorCZlhHDpZuZogYE/edit?usp=sharing))
 	* Navigate to `project/sv`
 	* Report on SV's occuring in each sample: 
 		- Run: `crg.sv.prioritize.sh sample panel.bed` on the *-metasv.vcf.gz file in each sample's folder. 
@@ -119,6 +163,18 @@ Includes all of the columns above, except SOURCES, NUM_SVTOOLS, SVTYPE and ANN, 
 - SAMPLE: does this sample have an overlapping SV in it? (0,1)
 - SAMPLE_details: what are the SV's in this sample which overlap with the reference?
 - SAMPLE_GENOTYPE
+
+## Result dir structure:
+project(family)_ID:
+- bcbio-align: config and final dirs from bcbio align-decoy run
+- bcbio-small-variants: bcbio configs and vcfs from bcbio small variant, output of cre for coding report
+- bcbio-sv: SV output from bcbio
+- genes: HPO, gene list, bed file
+- panel: non-coding report for gene panel cre dir
+- panel-flank100k: non-coding report for gene panel +100k flank cre dir
+- reports: csv report we send
+- tcag: tcag analysis
+- bam and bai files (without ready) - in the top directory to for easy access, bams from align-decoy step!
 
 ## Use case: compared SV calls from TCAG (ERDS) to MetaSV
 ```

@@ -1,30 +1,24 @@
+# no realignment and recalibration
+# alignment vs decoy
+# quality control
+# no variant calling
 details:
 - algorithm:
-    aligner: false
-    bam_clean: picard
-    effects: vep
-    effects_transcripts: all
+    aligner: bwa
+    effects: false
     realign: false
     recalibrate: false
-    remove_lcr: false
-    mark_duplicates: false
+    mark_duplicates: true
     save_diskspace: true
-    svcaller: [lumpy, manta, cnvkit, metasv, wham]
+    variantcaller: false
     tools_on:
-    - gemini
     - svplots
     - qualimap
-    - vep_splicesite_annotations
-    - noalt_calling
-    variantcaller:
-    - gatk-haplotype
-    vcfanno:
-    - /home/naumenko/crg/crg.vcfanno.conf
   analysis: variant2
   description: 'project_sample'
   files:
   - /hpf/largeprojects/ccmbio/naumenko/project_cheo/912R/input/912R_A337376.bam
-  genome_build: GRCh37
+  genome_build: GRCh37d5
   metadata:
     batch: project
 resources:
