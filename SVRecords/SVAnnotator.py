@@ -15,11 +15,12 @@ class SVTYPE(Enum):
     DUP = auto()
     INS = auto()
     INV = auto()
+    IDP = auto()
 
 class SVAnnotator:
     def __init__(self, exon_bed, hgmd_db, hpo, exac, omim, biomart, hgnc):
         self.final_gene_ref_cols = ['BioMart Ensembl Gene ID', 'BioMart Associated Gene Name', \
-       'BioMart MIM Gene Accession', 'HPO Features', \
+       'BioMart HGNC ID(s)', 'BioMart MIM Gene Accession', 'HPO Features', \
        'OMIM Phenotypes', 'OMIM Inheritance', 'ExAC syn_z', 'ExAC mis_z', \
        'ExAC lof_z', 'ExAC pLI']
 
@@ -143,7 +144,6 @@ class SVAnnotator:
         }
 
         hgmd_sv_df = pd.DataFrame()
-
         gros_del, gros_ins, gros_dup = get_hgmd_df()
 
         gros_del = groupby_genes(gros_del)
@@ -158,10 +158,9 @@ class SVAnnotator:
         gros_ins['HGMD SVTYPE'] = SVTYPE.INS.value
         gros_dup['HGMD SVTYPE'] = SVTYPE.DUP.value
 
-        hgmd_sv_df = pd.concat([gros_del, gros_ins, gros_dup], ignore_index=True, sort=False).drop_duplicates()
-        hgmd_sv_df.astype(str)
+        hgmd_sv_df = pd.concat([gros_del, gros_ins, gros_dup], ignore_index=True, sort=False).drop_duplicates().astype(str)
 
-        self.gene_ref_df = self.prioritized_annotation(self.gene_ref_df, hgmd_sv_df, matching_fields)
+        #self.gene_ref_df = self.prioritized_annotation(self.gene_ref_df, hgmd_sv_df, matching_fields)
 
     def prioritized_annotation(self, gene_ref_df, annotation_df, matched_fields):
         matched_rows = []
@@ -290,20 +289,14 @@ class SVAnnotator:
         '''
         all_sv_bed_name = "all_sv.bed"
         annotated = "./{}.annotated.tsv".format(all_sv_bed_name)
-
         sample_df.reset_index()[['CHROM', 'POS', 'END', 'SVTYPE']].to_csv(all_sv_bed_name, index=False, sep='\t')
-
         subprocess.call("$ANNOTSV/bin/AnnotSV -SVinputFile {} -SVinputInfo 1 -outputFile {}".format(all_sv_bed_name, annotated), shell=True)
 
-        annotsv_df = pd.read_csv(annotated, sep='\t')
+        annotsv_df = pd.read_csv(annotated, sep='\t').astype(str)
         annotsv_df = annotsv_df.loc[annotsv_df['AnnotSV type'] == 'full']
         annotsv_df = annotsv_df.rename(columns={annotsv_df.columns[0]: 'CHROM', annotsv_df.columns[1]: 'POS', annotsv_df.columns[2]: 'END', annotsv_df.columns[3]:'SVTYPE'}).set_index(keys=['CHROM', 'POS', 'END', 'SVTYPE'])
         annotsv_df = annotsv_df[annotsv_df.columns[13:22]] # all dgv and ddd columns
-        annotsv_df = annotsv_df.astype(str)
         sample_df = sample_df.join(annotsv_df)
-
-        print(annotsv_df)
-        print(sample_df)
 
         os.remove(all_sv_bed_name)
         os.remove(annotated)
@@ -327,6 +320,9 @@ class SVAnnotator:
 
         # annotate passed in ensemble gene id's using the generated reference dataframe
         gene_df = gene_df.join(self.gene_ref_df, on=gene_col).drop_duplicates()
+
+        print(gene_df)
+
         # aggregate all annotation columns within the same sv interval
         gene_df[gene_df.columns] = gene_df.groupby(gene_df.index).agg(list)[gene_df.columns]
         # parse out and replace nan values with "na" string
