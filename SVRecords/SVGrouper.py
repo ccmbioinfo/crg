@@ -5,12 +5,17 @@ import os
 from pybedtools import BedTool
 
 class SVGrouper:
-    def __init__(self, vcfs):
+    def __init__(self, vcfs, ann_fields=[]):
         def list2string(col):
             return col.apply(lambda x: ', '.join(x) if isinstance(x, list) else x)
 
-        all_sv, sample_list = self._merge_sv(vcfs)
+        #key - dataframe col name : value - vcf field name
+        self.index_cols = {'variants/CHROM':'CHROM', 'variants/END':'END', 'variants/POS':'POS', 'variants/SVTYPE':'SVTYPE'}
+
+        all_sv, ann_df, sample_list = self._parse_sv_vcfs(vcfs, ann_fields=ann_fields)
         assert len(sample_list) == len(set(sample_list)), "Duplicate sample names among input vcf's detected: %s" % sample_list
+
+        print(ann_df)
 
         columns = ['CHROM', 'POS', 'END', 'SVTYPE', 'Ensembl Gene ID', 'N_SAMPLES']
         columns.extend(sample_list)
@@ -19,7 +24,7 @@ class SVGrouper:
 
         self.sample_list = sample_list
         self.df = pd.DataFrame(columns=columns)
-        self.df.set_index(keys=['CHROM', 'POS', 'END', 'SVTYPE'], inplace=True)
+        self.df.set_index(keys=list(self.index_cols.values()), inplace=True)
         self._group_sv(all_sv)
         #list set typecast is to ensure that we get a list of unique ensemble identifiers
         self.df['Ensembl Gene ID'] = self.df['Ensembl Gene ID'].apply(lambda gene_list: list(set(gene_list.split(','))) if ',' in gene_list else gene_list)
@@ -29,7 +34,7 @@ class SVGrouper:
             self.df["%s_SV_DETAILS" % name] = list2string(self.df["%s_SV_DETAILS" % name])
             self.df["%s_GENOTYPE" % name] = list2string(self.df["%s_GENOTYPE" % name])
 
-    def _merge_sv(self, vcf_paths):
+    def _parse_sv_vcfs(self, vcf_paths, ann_fields=[]):
         '''
             Merge all SV interval data from multiple vcf's in to a single BedTool instance
 
@@ -49,21 +54,22 @@ class SVGrouper:
 
         intervals = []
         sample_names = []
+        ann_dfs = []
+
+        index_fields = ['variants/CHROM', 'variants/POS', 'variants/END', 'variants/SVTYPE', ] #CHR START STOP needs to be first 3 columns for creation of BedTool instance
+        sample_sv_fields = index_fields + ['calldata/GT', 'variants/ANN_Gene_ID', 'samples']
+        parse_fields = list(set(sample_sv_fields + ann_fields))
 
         for vcf_path in vcf_paths:
-            vcf_dict = allel.read_vcf(vcf_path, ['samples', 'calldata/GT', 'variants/CHROM', 'variants/END', 'variants/POS', 'variants/SVTYPE', 'variants/ANN', ], numbers={'ANN': 1000}, transformers=allel.ANNTransformer()) #use read_vcf because genotype field is not picked up with vcf_to_dataframe
-            
-            # vcf_dict = allel.read_vcf(vcf_path, ['variants/CHROM', 'variants/END', 'variants/POS', 'variants/SVTYPE', 'samples', 'calldata/GT', 'variants/ANN_Gene_ID',\
-            #     'variants/SVLEN', 'variants/ANN', 'variants/SVSCORESUM', 'variants/SVSCOREMAX', 'variants/SVSCORETOP5', 'variants/SVSCORETOP10', 'variants/SVSCOREMEAN', ], \
-            #     numbers={'ANN': 1000}, transformers=allel.ANNTransformer()) #use read_vcf because genotype field is not picked up with vcf_to_dataframe
+            vcf_dict = allel.read_vcf(vcf_path, ['*'], numbers={'ANN': 1000}, transformers=allel.ANNTransformer()) #use read_vcf because genotype field is not picked up with vcf_to_dataframe
 
             assert len(vcf_dict['samples']) == 1, "%s contains 0 or more than 1 sample: %s" % (vcf_path, str(vcf_dict['samples']))
             name = vcf_dict.pop('samples')[0]
             sample_names.append(name)
 
-            #discard all other ANN fields
+            # drop un-needed fields from vcf, cannot pass in parse_fields to read_vcf() because ANN_gene_id is unknown until ANNTransformer runs
             for key in list(vcf_dict.keys()):
-                if "ANN" in key and (key != "variants/ANN_Gene_ID"):
+                if key not in parse_fields:
                     vcf_dict.pop(key)
 
             # remove empty strings, split on delimited characters, then join using comma
@@ -75,11 +81,14 @@ class SVGrouper:
 
             df = pd.DataFrame(vcf_dict)
             df['samples'] = name
-            df = df[['variants/CHROM', 'variants/POS', 'variants/END', 'variants/SVTYPE', 'calldata/GT', 'variants/ANN_Gene_ID', 'samples']] #order of first 3 columns matters for creation of BedTool
+            intervals.extend(df[sample_sv_fields].itertuples(index=False))
 
-            intervals.extend(df.itertuples(index=False))
+            if ann_fields:
+                ann_dfs.append(df[index_fields + ann_fields])
 
-        return BedTool(intervals), sample_names
+        ann_df = pd.concat(ann_dfs).drop_duplicates().set_index(index_fields) if ann_fields else pd.DataFrame()
+
+        return BedTool(intervals), ann_df, sample_names
 
     def _group_sv(self, bedtool):
         already_grouped_intervals = set()
