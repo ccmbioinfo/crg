@@ -10,12 +10,10 @@ class SVGrouper:
             return col.apply(lambda x: ', '.join(x) if isinstance(x, list) else x)
 
         #key - dataframe col name : value - vcf field name
-        self.index_cols = {'variants/CHROM':'CHROM', 'variants/END':'END', 'variants/POS':'POS', 'variants/SVTYPE':'SVTYPE'}
+        self.index_cols = {'variants/CHROM':'CHROM', 'variants/POS':'POS', 'variants/END':'END', 'variants/SVTYPE':'SVTYPE'}
 
         all_sv, ann_df, sample_list = self._parse_sv_vcfs(vcfs, ann_fields=ann_fields)
         assert len(sample_list) == len(set(sample_list)), "Duplicate sample names among input vcf's detected: %s" % sample_list
-
-        print(ann_df)
 
         columns = ['CHROM', 'POS', 'END', 'SVTYPE', 'Ensembl Gene ID', 'N_SAMPLES']
         columns.extend(sample_list)
@@ -23,16 +21,17 @@ class SVGrouper:
         columns.extend(["%s_GENOTYPE" % s for s in sample_list])
 
         self.sample_list = sample_list
-        self.df = pd.DataFrame(columns=columns)
-        self.df.set_index(keys=list(self.index_cols.values()), inplace=True)
+        self.df = pd.DataFrame(columns=columns).set_index(keys=list(self.index_cols.values()))
         self._group_sv(all_sv)
-        #list set typecast is to ensure that we get a list of unique ensemble identifiers
-        self.df['Ensembl Gene ID'] = self.df['Ensembl Gene ID'].apply(lambda gene_list: list(set(gene_list.split(','))) if ',' in gene_list else gene_list)
+        self.df['Ensembl Gene ID'] = self.df['Ensembl Gene ID'].apply(lambda gene_list: list(set(gene_list.split(','))) if ',' in gene_list else gene_list) #list set typecast is to ensure that we get a list of unique ensemble identifiers
         self.bedtool = self._make_ref_bedtool()
 
         for name in self.sample_list:
             self.df["%s_SV_DETAILS" % name] = list2string(self.df["%s_SV_DETAILS" % name])
             self.df["%s_GENOTYPE" % name] = list2string(self.df["%s_GENOTYPE" % name])
+
+        # append annotation fields to final df
+        self.df = self.df.join(ann_df, how='left')
 
     def _parse_sv_vcfs(self, vcf_paths, ann_fields=[]):
         '''
@@ -56,7 +55,7 @@ class SVGrouper:
         sample_names = []
         ann_dfs = []
 
-        index_fields = ['variants/CHROM', 'variants/POS', 'variants/END', 'variants/SVTYPE', ] #CHR START STOP needs to be first 3 columns for creation of BedTool instance
+        index_fields = list(self.index_cols.keys()) #CHR START STOP needs to be first 3 columns for creation of BedTool instance
         sample_sv_fields = index_fields + ['calldata/GT', 'variants/ANN_Gene_ID', 'samples']
         parse_fields = list(set(sample_sv_fields + ann_fields))
 
@@ -86,8 +85,7 @@ class SVGrouper:
             if ann_fields:
                 ann_dfs.append(df[index_fields + ann_fields])
 
-        ann_df = pd.concat(ann_dfs).drop_duplicates().set_index(index_fields) if ann_fields else pd.DataFrame()
-
+        ann_df = pd.concat(ann_dfs).astype(str).drop_duplicates().rename(columns=self.index_cols).set_index(list(self.index_cols.values())) if ann_fields else pd.DataFrame()
         return BedTool(intervals), ann_df, sample_names
 
     def _group_sv(self, bedtool):

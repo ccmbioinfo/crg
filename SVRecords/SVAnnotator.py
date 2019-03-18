@@ -22,7 +22,7 @@ class SVAnnotator:
         self.final_gene_ref_cols = ['BioMart Ensembl Gene ID', 'BioMart Associated Gene Name', \
        'BioMart HGNC ID(s)', 'BioMart MIM Gene Accession', 'HPO Features', \
        'OMIM Phenotypes', 'OMIM Inheritance', 'ExAC syn_z', 'ExAC mis_z', \
-       'ExAC lof_z', 'ExAC pLI']
+       'ExAC lof_z', 'ExAC pLI', 'HGMD disease', 'HGMD tag', 'HGMD descr', 'HGMD JOURNAL_DETAILS', 'HGMD SVTYPE']
 
         self.make_gene_ref_df(biomart)
         self.make_hgnc_dict(hgnc)
@@ -32,7 +32,7 @@ class SVAnnotator:
         self.annotate_omim(omim)
         print('Annotating genes with ExAC transcript probabilities')
         self.annotate_exac(exac)
-        #self.annotate_hgmd(hgmd_db)
+        self.annotate_hgmd(hgmd_db)
 
         # strip columns not used for annotation
         # technical note: drop duplicates before setting index - doing the reverse order will drop all duplicated columns instead of keeping one copy
@@ -86,14 +86,16 @@ class SVAnnotator:
     def calc_exons_spanned(self, sample_df, exon_bed):
         exon_counts = defaultdict(int) #incrementing dict and setting value in df is faster than incrementing values in the df
         exon_ref = BedTool(exon_bed)
-        sample_bedtool = list(sample_df[['CHROM', 'POS', 'END', 'SVTYPE']].values)
-
-        sample_df['EXONS_SPANNED'] = 0 #create column and set default val
+        sample_bedtool = BedTool(list(sample_df.reset_index()[['CHROM', 'POS', 'END', 'SVTYPE']].values))
 
         for interval in sample_bedtool.intersect(exon_ref, wa=True):
             exon_counts[(str(interval.chrom), str(interval.start), str(interval.stop),  str(interval[3]))] += 1
+        
+        count_df = pd.Series(exon_counts).to_frame().astype(str)
+        count_df.index.names = ['CHROM', 'POS', 'END', 'SVTYPE']
+        count_df.columns = ['EXONS_SPANNED']
 
-        self.set_column_values(sample_df, exon_counts, 'EXONS_SPANNED')
+        return sample_df.join(count_df).fillna(value={'EXONS_SPANNED': 0})
 
     def annotate_hgmd(self, hgmd):
         def get_hgmd_df():
@@ -160,7 +162,7 @@ class SVAnnotator:
 
         hgmd_sv_df = pd.concat([gros_del, gros_ins, gros_dup], ignore_index=True, sort=False).drop_duplicates().astype(str)
 
-        #self.gene_ref_df = self.prioritized_annotation(self.gene_ref_df, hgmd_sv_df, matching_fields)
+        self.gene_ref_df = self.prioritized_annotation(self.gene_ref_df, hgmd_sv_df, matching_fields)
 
     def prioritized_annotation(self, gene_ref_df, annotation_df, matched_fields):
         matched_rows = []
@@ -319,9 +321,9 @@ class SVAnnotator:
         gene_df = gene_df.to_frame().drop_duplicates().astype(str)
 
         # annotate passed in ensemble gene id's using the generated reference dataframe
-        gene_df = gene_df.join(self.gene_ref_df, on=gene_col).drop_duplicates()
-
-        print(gene_df)
+        gene_df = gene_df.join(self.gene_ref_df, on=gene_col).drop_duplicates().reset_index()
+        # parse out hgmd gene annotations who's SVTYPE does not match up with the sample's
+        gene_df = gene_df[ (gene_df['SVTYPE'] == gene_df['HGMD SVTYPE']) | (pd.isnull(gene_df['HGMD SVTYPE'])) | (gene_df['HGMD SVTYPE'] == 'nan') ].set_index(['CHROM', 'POS', 'END', 'SVTYPE'])
 
         # aggregate all annotation columns within the same sv interval
         gene_df[gene_df.columns] = gene_df.groupby(gene_df.index).agg(list)[gene_df.columns]

@@ -2,14 +2,18 @@ import argparse
 from SVRecords import SVGrouper, SVAnnotator
 
 def main(exon_bed, hgmd_db, hpo, exac, omim, biomart, hgnc, outfile_name, vcfs):
+    SVScore_fields = ['variants/SVSCORESUM', 'variants/SVSCOREMAX', 'variants/SVSCORETOP5', 'variants/SVSCORETOP10', 'variants/SVSCOREMEAN',]
+
     print("Grouping like structural variants ...")
-    sv_records = SVGrouper(vcfs)
+    sv_records = SVGrouper(vcfs, ann_fields=SVScore_fields)
 
     print('Annotating structural variants ...')
     ann_records = SVAnnotator(exon_bed, hgmd_db, hpo, exac, omim, biomart, hgnc)
     sv_records.df = ann_records.annotate_genes(sv_records.df, "Ensembl Gene ID")
-
     sv_records.df = ann_records.annotsv(sv_records.df)
+    sv_records.df = ann_records.calc_exons_spanned(sv_records.df, exon_bed)
+
+    sv_records.df.columns = sv_records.df.columns.str.replace('variants/','')
 
     print('Writing results to file ...')
     sv_records.write(outfile_name)
