@@ -18,14 +18,12 @@ class SVTYPE(Enum):
     IDP = auto()
 
 class SVAnnotator:
-    def __init__(self, exon_bed, hgmd_db, hpo, exac, omim, biomart, hgnc):
-        self.final_gene_ref_cols = ['BioMart Ensembl Gene ID', 'BioMart Associated Gene Name', \
-       'BioMart HGNC ID(s)', 'BioMart MIM Gene Accession', 'HPO Features', \
+    def __init__(self, exon_bed, hgmd_db, hpo, exac, omim, biomart):
+        self.final_gene_ref_cols = ['BioMart Ensembl Gene ID', 'BioMart Associated Gene Name', 'HPO Features', \
        'OMIM Phenotypes', 'OMIM Inheritance', 'ExAC syn_z', 'ExAC mis_z', \
        'ExAC lof_z', 'ExAC pLI', 'HGMD disease', 'HGMD tag', 'HGMD descr', 'HGMD JOURNAL_DETAILS', 'HGMD SVTYPE']
 
         self.make_gene_ref_df(biomart)
-        self.make_hgnc_dict(hgnc)
         print('Annotating genes with HPO terms')
         self.annotate_hpo(hpo)
         print('Annotating genes with OMIM phenotypes and inheritance patterns')
@@ -134,14 +132,14 @@ class SVAnnotator:
         def groupby_genes(df):
             df['hgncID'] = df['hgncID'].astype(str)
             #df['omimid'] = df['omimid'].astype(str)
-            df['gene'] = self.gene2hgnc(df['gene'])
+            #df['gene'] = self.gene2hgnc(df['gene'])
             df = df.groupby(by='gene', as_index=False).agg(lambda x: "%s" % ', '.join(x))
             df['hgncID'] = df['hgncID'].apply(lambda col: col.split(', ')[0])
             #df['omimid'] = df['omimid'].apply(lambda col: col.split(', ')[0])
             return df
         
         matching_fields = {
-            "HGMD hgncID" : "BioMart HGNC ID(s)",
+            # "HGMD hgncID" : "BioMart HGNC ID(s)",
             "HGMD gene" : "BioMart Associated Gene Name",
         }
 
@@ -173,9 +171,6 @@ class SVAnnotator:
 
         annotation_df = annotation_df.drop_duplicates()
 
-        #print(gene_ref_df_matching_cols.dtypes)
-        #print(annotation_df.dtypes)
-
         #join on equivalent fields
         for ann_field, ref_field in matched_fields.items():
             matched = gene_ref_df_matching_cols.join(annotation_df.set_index(ann_field), on=ref_field, how='inner')
@@ -192,20 +187,20 @@ class SVAnnotator:
 
         merged_df = pd.concat(matched_rows, ignore_index=True, sort=False).drop_duplicates().set_index(ref_match_columns).dropna(how='all')
 
-        #print(merged_df)
-
         #add the remaining fields to the reference dataframe
         return self.gene_ref_df.join(merged_df, on=ref_match_columns, how='left').drop_duplicates()
 
     def annotate_hpo(self, hpo):
         matching_fields = {'HPO Gene ID': 'BioMart Ensembl Gene ID',
-        'HPO Gene symbol': 'BioMart Associated Gene Name'}
+        # 'HPO Gene symbol': 'BioMart Associated Gene Name'
+        }
 
         hpo_df = pd.read_csv(hpo, sep='\t')
         hpo_df.columns = hpo_df.columns.str.strip()
-        hpo_df = hpo_df[['Gene ID', 'Gene symbol', 'Features']]
+        # hpo_df = hpo_df[['Gene ID', 'Gene symbol', 'Features']]
+        hpo_df = hpo_df[['Gene ID', 'Features']]
         hpo_df['Features'] = hpo_df['Features'].apply(lambda features: features.replace('; ', ', '))
-        hpo_df['Gene symbol'] = hpo_df['Gene symbol'].apply(lambda symbol: symbol.upper())
+        # hpo_df['Gene symbol'] = hpo_df['Gene symbol'].apply(lambda symbol: symbol.upper())
 
         hpo_df = hpo_df.astype(str)
         self.append_prefix_to_columns(hpo_df, "HPO")
@@ -243,31 +238,20 @@ class SVAnnotator:
 
                 return ', '.join(inheritance)
 
-        matching_fields = {'OMIM Mim Number': 'BioMart MIM Gene Accession',
-        'OMIM Ensembl Gene ID': 'BioMart Ensembl Gene ID'}
+        matching_fields = {'OMIM Ensembl Gene ID': 'BioMart Ensembl Gene ID'}
 
         # OMIM adds comments to their CSV file. These comments start with '#' character and are present in the header and footer of the file.
         omim_df = pd.read_csv(omim, sep='\t', header=3, skipfooter=61, engine='python')
         omim_df.columns = omim_df.columns.str.replace('#','')
         omim_df.columns = omim_df.columns.str.strip()
 
-        # # replace empty offical symbol columns with the "unoffical" gene symbol columns
-        # omim_df.loc[omim_df['Approved Symbol'].isna(), 'Approved Symbol'] = omim_df['Gene Symbols']
-        
-        # # translate gene symbols to offical hgnc
-        # omim_df['Approved Symbol'] = omim_df['Approved Symbol'].str.split(', ')
-        # omim_df['Approved Symbol'] = self.gene2hgnc(omim_df['Approved Symbol'])
-
         omim_df = omim_df[['Mim Number', 'Ensembl Gene ID', 'Phenotypes']]
         omim_df = omim_df[pd.notnull(omim_df['Phenotypes'])] #drop all nan phenotype columns
-        #create new column for inheritance
         omim_df['Inheritance'] = omim_df['Phenotypes'].apply(lambda col: process_OMIM_phenotype(col))
-
-        omim_df = omim_df.astype(str)
+        omim_df = omim_df.astype(str).groupby('Ensembl Gene ID', as_index=False).agg({'Phenotypes' : ' & '.join, 'Mim Number' : ' & '.join, 'Inheritance' : ' & '.join,})
         self.append_prefix_to_columns(omim_df, "OMIM")
-
         self.gene_ref_df = self.prioritized_annotation(self.gene_ref_df, omim_df, matching_fields)
-        #self.gene_ref_df.to_csv("omim_ann.tsv", sep="\t")
+        # self.gene_ref_df.to_csv("omim_ann.tsv", sep="\t")
 
     def annotate_exac(self, exac):
         matching_fields = {
@@ -284,6 +268,28 @@ class SVAnnotator:
 
         self.gene_ref_df = self.prioritized_annotation(self.gene_ref_df, exac_df, matching_fields)
         #self.gene_ref_df.to_csv("exac_ann.tsv", sep="\t")
+
+    def annotate_gnomad(self, gnomad, sv_record, reciprocal_overlap=0.9):
+        gnomad_cols = ['CHROM',	'START', 'END', 'NAME',	'SVTYPE', 'AN',	'AC', 'AF', 'N_HOMREF',	'N_HET', 'N_HOMALT', 'FREQ_HOMREF',	'FREQ_HET',	'FREQ_HOMALT',	'POPMAX_AF']
+        gnomad_ann_cols = ['gnomAD_SVTYPE', 'gnomAD_AN', 'gnomAD_AC', 'gnomAD_AF', 'gnomAD_N_HOMREF', 'gnomAD_N_HET', 'gnomAD_N_HOMALT', 'gnomAD_FREQ_HOMREF', 'gnomAD_FREQ_HET', 'gnomAD_FREQ_HOMALT', 'gnomAD_POPMAX_AF']
+        gnomad_df = pd.read_csv(gnomad, sep='\t', dtype='str').astype(str)
+        gnomad_df.columns = gnomad_df.columns.str.replace('#', '')
+        gnomad_df.columns = gnomad_df.columns.str.strip()
+        gnomad_df = gnomad_df[gnomad_cols]
+        gnomad_bed = BedTool(gnomad_df.itertuples(index=False))
+
+        sample_sv = sv_record.make_ref_bedtool()
+        sv_record.df[gnomad_ann_cols] = pd.DataFrame([["NA" for field in gnomad_ann_cols]], index=sv_record.df.index)
+
+        for ann in sample_sv.intersect(gnomad_bed, wa=True, wb=True, F=reciprocal_overlap, f=reciprocal_overlap):
+
+            samp_chr, samp_start, samp_end, samp_svtype = ann[0:4]
+            gnomad_chr, gnomad_start, gnomad_end, gnomad_id, gnomad_svtype = ann[4:9]
+
+            if gnomad_svtype == samp_svtype:
+                sv_record.df.loc[(samp_chr, samp_start, samp_end, samp_svtype), gnomad_ann_cols] = ann[8:20]
+            # elif gnomad_svtype == 'MCNV':
+            #     print("passing MCNV")
 
     def annotsv(self, sample_df):
         '''
@@ -307,7 +313,8 @@ class SVAnnotator:
 
     def make_gene_ref_df(self, biomart):
         df = pd.read_csv(biomart, sep='\t')
-        df = df[['Ensembl Gene ID', 'Ensembl Transcript ID', 'Associated Gene Name', 'HGNC ID(s)', 'MIM Gene Accession']].drop_duplicates()
+        # df = df[['Ensembl Gene ID', 'Ensembl Transcript ID', 'Associated Gene Name', 'HGNC ID(s)', 'MIM Gene Accession']].drop_duplicates()
+        df = df[['Ensembl Gene ID', 'Associated Gene Name',]].drop_duplicates()
         df['Associated Gene Name'] = df['Associated Gene Name'].apply(lambda symbol: symbol.upper()) #make all gene symbols a single case to increase match rate with other dataframes
         df = df.astype(str)
         self.append_prefix_to_columns(df, "BioMart")

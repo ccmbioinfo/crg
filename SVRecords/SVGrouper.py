@@ -24,7 +24,7 @@ class SVGrouper:
         self.df = pd.DataFrame(columns=columns).set_index(keys=list(self.index_cols.values()))
         self._group_sv(all_sv)
         self.df['Ensembl Gene ID'] = self.df['Ensembl Gene ID'].apply(lambda gene_list: list(set(gene_list.split(','))) if ',' in gene_list else gene_list) #list set typecast is to ensure that we get a list of unique ensemble identifiers
-        self.bedtool = self._make_ref_bedtool()
+        self.bedtool = self.make_ref_bedtool()
 
         for name in self.sample_list:
             self.df["%s_SV_DETAILS" % name] = list2string(self.df["%s_SV_DETAILS" % name])
@@ -55,7 +55,7 @@ class SVGrouper:
         sample_names = []
         ann_dfs = []
 
-        index_fields = list(self.index_cols.keys()) #CHR START STOP needs to be first 3 columns for creation of BedTool instance
+        index_fields = list(self.index_cols.keys()) #CHR POS STOP needs to be first 3 columns for creation of BedTool instance
         sample_sv_fields = index_fields + ['calldata/GT', 'variants/ANN_Gene_ID', 'samples']
         parse_fields = list(set(sample_sv_fields + ann_fields))
 
@@ -134,5 +134,5 @@ class SVGrouper:
     def write(self, outfile_name):
         self.df.to_csv(outfile_name, sep='\t', encoding='utf-8')
 
-    def _make_ref_bedtool(self):
+    def make_ref_bedtool(self):
         return BedTool(list(self.df.index.values))
