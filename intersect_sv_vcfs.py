@@ -10,9 +10,10 @@ def main(exon_bed, hgmd_db, hpo, exac, omim, biomart, gnomad, outfile_name, vcfs
     print('Annotating structural variants ...')
     ann_records = SVAnnotator(exon_bed, hgmd_db, hpo, exac, omim, biomart)
     sv_records.df = ann_records.annotate_genes(sv_records.df, "Ensembl Gene ID")
-    sv_records.df = ann_records.annotsv(sv_records.df)
-    sv_records.df = ann_records.calc_exons_spanned(sv_records.df, exon_bed)
-    ann_records.annotate_gnomad(gnomad, sv_records)
+    # sv_records.df = ann_records.annotsv(sv_records.df)
+    # sv_records.df = ann_records.calc_exons_spanned(sv_records.df, exon_bed)
+    # ann_records.annotate_gnomad(gnomad, sv_records)
+    ann_records.add_decipher_link(sv_records.df)
 
     sv_records.df.columns = sv_records.df.columns.str.replace('variants/','')
 

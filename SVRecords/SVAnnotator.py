@@ -19,9 +19,9 @@ class SVTYPE(Enum):
 
 class SVAnnotator:
     def __init__(self, exon_bed, hgmd_db, hpo, exac, omim, biomart):
-        self.final_gene_ref_cols = ['BioMart Ensembl Gene ID', 'BioMart Associated Gene Name', 'HPO Features', \
-       'OMIM Phenotypes', 'OMIM Inheritance', 'ExAC syn_z', 'ExAC mis_z', \
-       'ExAC lof_z', 'ExAC pLI', 'HGMD disease', 'HGMD tag', 'HGMD descr', 'HGMD JOURNAL_DETAILS', 'HGMD SVTYPE']
+        self.final_gene_ref_cols = ['BioMart Ensembl Gene ID', "Decipher Link", 'BioMart Associated Gene Name', 'HPO Features', \
+       'OMIM Mim Number', 'OMIM Phenotypes', 'OMIM Inheritance', 'ExAC syn_z', 'ExAC mis_z', \
+       'ExAC lof_z', 'ExAC pLI', "HGMD gene", 'HGMD disease', 'HGMD tag', 'HGMD descr', 'HGMD JOURNAL_DETAILS', 'HGMD SVTYPE']
 
         self.make_gene_ref_df(biomart)
         print('Annotating genes with HPO terms')
@@ -30,11 +30,13 @@ class SVAnnotator:
         self.annotate_omim(omim)
         print('Annotating genes with ExAC transcript probabilities')
         self.annotate_exac(exac)
+        print('Annotating genes with published cases of pathogenic structural variants from HGMD')
         self.annotate_hgmd(hgmd_db)
 
         # strip columns not used for annotation
         # technical note: drop duplicates before setting index - doing the reverse order will drop all duplicated columns instead of keeping one copy
-        self.gene_ref_df = self.gene_ref_df[self.final_gene_ref_cols].drop_duplicates(keep='first').set_index('BioMart Ensembl Gene ID').astype(str)
+        self.gene_ref_df = self.gene_ref_df.drop_duplicates(keep='first').set_index('BioMart Ensembl Gene ID').astype(str)
+        # self.gene_ref_df = self.gene_ref_df[self.final_gene_ref_cols].drop_duplicates(keep='first').set_index('BioMart Ensembl Gene ID').astype(str)
 
     def set_column_values(self, df, annotation_dict, column_name):
         for interval, data in annotation_dict.items():
@@ -133,13 +135,12 @@ class SVAnnotator:
             df['hgncID'] = df['hgncID'].astype(str)
             #df['omimid'] = df['omimid'].astype(str)
             #df['gene'] = self.gene2hgnc(df['gene'])
-            df = df.groupby(by='gene', as_index=False).agg(lambda x: "%s" % ', '.join(x))
+            df = df.groupby(by='gene', as_index=False).agg(lambda x: "%s" % ' & '.join(x))
             df['hgncID'] = df['hgncID'].apply(lambda col: col.split(', ')[0])
             #df['omimid'] = df['omimid'].apply(lambda col: col.split(', ')[0])
             return df
         
         matching_fields = {
-            # "HGMD hgncID" : "BioMart HGNC ID(s)",
             "HGMD gene" : "BioMart Associated Gene Name",
         }
 
@@ -159,8 +160,13 @@ class SVAnnotator:
         gros_dup['HGMD SVTYPE'] = SVTYPE.DUP.value
 
         hgmd_sv_df = pd.concat([gros_del, gros_ins, gros_dup], ignore_index=True, sort=False).drop_duplicates().astype(str)
+        hgmd_sv_df['Genes in HGMD'] = hgmd_sv_df["HGMD gene"]
+        hgmd_sv_df = self.set_first_cols(hgmd_sv_df, ["Genes in HGMD"])
 
-        self.gene_ref_df = self.prioritized_annotation(self.gene_ref_df, hgmd_sv_df, matching_fields)
+        self.gene_ref_df = self.left_join(self.gene_ref_df, hgmd_sv_df, "BioMart Associated Gene Name", "HGMD gene")
+
+    def set_first_cols(self, df1, fields):
+        return df1[ fields + [col for col in df1.columns if col not in fields ]]
 
     def prioritized_annotation(self, gene_ref_df, annotation_df, matched_fields):
         matched_rows = []
@@ -177,33 +183,36 @@ class SVAnnotator:
             matched_rows.append(matched)
 
         #drop columns from annotation_df used for joining
-        for table in matched_rows:
-            for field in ann_match_columns:
-                try:
-                    table.drop(columns=[field, ], axis=0, inplace=True)
-                    #print("Dropped %s" % field)
-                except KeyError:
-                    pass #tried to drop column which was joined on
+        # for table in matched_rows:
+        #     for field in ann_match_columns:
+        #         try:
+        #             table.drop(columns=[field, ], axis=0, inplace=True)
+        #             #print("Dropped %s" % field)
+        #         except KeyError:
+        #             pass #tried to drop column which was joined on
 
         merged_df = pd.concat(matched_rows, ignore_index=True, sort=False).drop_duplicates().set_index(ref_match_columns).dropna(how='all')
 
         #add the remaining fields to the reference dataframe
         return self.gene_ref_df.join(merged_df, on=ref_match_columns, how='left').drop_duplicates()
 
+    def left_join(self, df1, df2, field1, field2):
+        df2 = df2.drop_duplicates().set_index(field2).dropna(how='all')
+        return df1.set_index(field1).join(df2, how='left').drop_duplicates().rename_axis(field1).reset_index()
+
     def annotate_hpo(self, hpo):
-        matching_fields = {'HPO Gene ID': 'BioMart Ensembl Gene ID',
-        # 'HPO Gene symbol': 'BioMart Associated Gene Name'
-        }
+        matching_fields = {'HPO Gene ID': 'BioMart Ensembl Gene ID',}
 
         hpo_df = pd.read_csv(hpo, sep='\t')
         hpo_df.columns = hpo_df.columns.str.strip()
         # hpo_df = hpo_df[['Gene ID', 'Gene symbol', 'Features']]
         hpo_df = hpo_df[['Gene ID', 'Features']]
         hpo_df['Features'] = hpo_df['Features'].apply(lambda features: features.replace('; ', ', '))
-        # hpo_df['Gene symbol'] = hpo_df['Gene symbol'].apply(lambda symbol: symbol.upper())
 
         hpo_df = hpo_df.astype(str)
         self.append_prefix_to_columns(hpo_df, "HPO")
+        hpo_df = self.left_join(hpo_df, self.gene_ref_df[["BioMart Ensembl Gene ID", 'BioMart Associated Gene Name']], 'HPO Gene ID', "BioMart Ensembl Gene ID")
+        hpo_df = hpo_df.rename(columns={'BioMart Associated Gene Name': 'Genes in HPO'})
 
         self.gene_ref_df = self.prioritized_annotation(self.gene_ref_df, hpo_df, matching_fields)
         #self.gene_ref_df.to_csv("hpo_ann.tsv", sep="\t")
@@ -250,6 +259,10 @@ class SVAnnotator:
         omim_df['Inheritance'] = omim_df['Phenotypes'].apply(lambda col: process_OMIM_phenotype(col))
         omim_df = omim_df.astype(str).groupby('Ensembl Gene ID', as_index=False).agg({'Phenotypes' : ' & '.join, 'Mim Number' : ' & '.join, 'Inheritance' : ' & '.join,})
         self.append_prefix_to_columns(omim_df, "OMIM")
+
+        omim_df = self.left_join(omim_df, self.gene_ref_df[["BioMart Ensembl Gene ID", 'BioMart Associated Gene Name']], 'OMIM Ensembl Gene ID', "BioMart Ensembl Gene ID")
+        omim_df = omim_df.rename(columns={'BioMart Associated Gene Name': 'Genes in OMIM'})
+
         self.gene_ref_df = self.prioritized_annotation(self.gene_ref_df, omim_df, matching_fields)
         # self.gene_ref_df.to_csv("omim_ann.tsv", sep="\t")
 
@@ -288,8 +301,6 @@ class SVAnnotator:
 
             if gnomad_svtype == samp_svtype:
                 sv_record.df.loc[(samp_chr, samp_start, samp_end, samp_svtype), gnomad_ann_cols] = ann[8:20]
-            # elif gnomad_svtype == 'MCNV':
-            #     print("passing MCNV")
 
     def annotsv(self, sample_df):
         '''
@@ -322,6 +333,20 @@ class SVAnnotator:
         self.gene_ref_df = df
     
     def annotate_genes(self, sample_df, gene_col):
+
+        def count_unique_terms(cell):
+            terms = set()
+
+            for elem in cell:
+                if pd.isnull(elem):
+                    continue
+                elif ', ' in elem:
+                    terms.update(elem.split(', '))
+                elif elem != 'na' and elem != 'nan':
+                    terms.add(elem)
+
+            return len(terms)
+
         # extract genes from sample_df, create a new dataframe where each row only has a single ensemble id and interval info
         gene_df = sample_df.apply(lambda x: pd.Series(x[gene_col]),axis=1).stack().reset_index(level=4, drop=True)
         gene_df.name = gene_col
@@ -334,13 +359,23 @@ class SVAnnotator:
 
         # aggregate all annotation columns within the same sv interval
         gene_df[gene_df.columns] = gene_df.groupby(gene_df.index).agg(list)[gene_df.columns]
+
+        # add cardinality columns
+        gene_df["N_UNIQUE_HPO_TERMS"] = [ [count_unique_terms(values["HPO Features"])] for index, values in gene_df.iterrows()]
+        gene_df["N_GENES_IN_HPO"] = [ [count_unique_terms(values["Genes in HPO"])] for index, values in gene_df.iterrows()]
+        gene_df["N_GENES_IN_OMIM"] = [ [count_unique_terms(values["Genes in OMIM"])] for index, values in gene_df.iterrows()]
+
         # parse out and replace nan values with "na" string
         gene_df[gene_df.columns] = gene_df[gene_df.columns].applymap(lambda cell: [str(item) for item in cell])
         gene_df[gene_df.columns] = gene_df[gene_df.columns].applymap(lambda cell: ["na"] if all("nan" == item.lower() for item in cell) else cell)
         gene_df[gene_df.columns] = gene_df[gene_df.columns].applymap(lambda cell: ["na" if "nan" == item.lower() else item for item in cell])
-        gene_df[gene_df.columns] = gene_df[gene_df.columns].applymap(lambda cell: ', '.join(cell))
+
+        gene_df[gene_df.columns] = gene_df[gene_df.columns].applymap(lambda cell: ' | '.join(cell))
         gene_df = gene_df[gene_df.columns].drop_duplicates()
 
         # annotate the passed in dataframe
         sample_df = sample_df.drop(gene_col, axis=1).join(gene_df)
         return sample_df
+
+    def add_decipher_link(self, df):
+        df['DECIPHER_LINK'] = ['''=HYPERLINK("https://decipher.sanger.ac.uk/browser#q/%s:%s-%s")''' % index[0:3] for index, fields in df.iterrows()]
