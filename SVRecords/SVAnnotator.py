@@ -19,13 +19,17 @@ class SVTYPE(Enum):
 
 class SVAnnotator:
     def __init__(self, exon_bed, hgmd_db, hpo, exac, omim, biomart):
-        self.final_gene_ref_cols = ['BioMart Ensembl Gene ID', "Decipher Link", 'BioMart Associated Gene Name', 'HPO Features', \
-       'OMIM Mim Number', 'OMIM Phenotypes', 'OMIM Inheritance', 'ExAC syn_z', 'ExAC mis_z', \
-       'ExAC lof_z', 'ExAC pLI', "HGMD gene", 'HGMD disease', 'HGMD tag', 'HGMD descr', 'HGMD JOURNAL_DETAILS', 'HGMD SVTYPE']
 
         self.make_gene_ref_df(biomart)
-        print('Annotating genes with HPO terms')
-        self.annotate_hpo(hpo)
+
+        if os.path.isfile(hpo):
+            print('Annotating genes with HPO terms')
+            self.HPO = True
+            self.annotate_hpo(hpo)
+        else:
+            print('No valid HPO file specified. Skipping annotation.')
+            self.HPO = False
+
         print('Annotating genes with OMIM phenotypes and inheritance patterns')
         self.annotate_omim(omim)
         print('Annotating genes with ExAC transcript probabilities')
@@ -33,10 +37,8 @@ class SVAnnotator:
         print('Annotating genes with published cases of pathogenic structural variants from HGMD')
         self.annotate_hgmd(hgmd_db)
 
-        # strip columns not used for annotation
         # technical note: drop duplicates before setting index - doing the reverse order will drop all duplicated columns instead of keeping one copy
         self.gene_ref_df = self.gene_ref_df.drop_duplicates(keep='first').set_index('BioMart Ensembl Gene ID').astype(str)
-        # self.gene_ref_df = self.gene_ref_df[self.final_gene_ref_cols].drop_duplicates(keep='first').set_index('BioMart Ensembl Gene ID').astype(str)
 
     def set_column_values(self, df, annotation_dict, column_name):
         for interval, data in annotation_dict.items():
@@ -84,6 +86,8 @@ class SVAnnotator:
         return col.apply(translate)
 
     def calc_exons_spanned(self, sample_df, exon_bed):
+        print('Calculating the number of exons affected by each structural variant ...')
+
         exon_counts = defaultdict(int) #incrementing dict and setting value in df is faster than incrementing values in the df
         exon_ref = BedTool(exon_bed)
         sample_bedtool = BedTool(list(sample_df.reset_index()[['CHROM', 'POS', 'END', 'SVTYPE']].values))
@@ -161,12 +165,8 @@ class SVAnnotator:
 
         hgmd_sv_df = pd.concat([gros_del, gros_ins, gros_dup], ignore_index=True, sort=False).drop_duplicates().astype(str)
         hgmd_sv_df['Genes in HGMD'] = hgmd_sv_df["HGMD gene"]
-        hgmd_sv_df = self.set_first_cols(hgmd_sv_df, ["Genes in HGMD"])
 
         self.gene_ref_df = self.left_join(self.gene_ref_df, hgmd_sv_df, "BioMart Associated Gene Name", "HGMD gene")
-
-    def set_first_cols(self, df1, fields):
-        return df1[ fields + [col for col in df1.columns if col not in fields ]]
 
     def prioritized_annotation(self, gene_ref_df, annotation_df, matched_fields):
         matched_rows = []
@@ -283,6 +283,8 @@ class SVAnnotator:
         #self.gene_ref_df.to_csv("exac_ann.tsv", sep="\t")
 
     def annotate_gnomad(self, gnomad, sv_record, reciprocal_overlap=0.9):
+        print('Annotating structural variants with those seen in gnomAD_SV based on a %f reciprocal overlap ...' % reciprocal_overlap)
+
         gnomad_cols = ['CHROM',	'START', 'END', 'NAME',	'SVTYPE', 'AN',	'AC', 'AF', 'N_HOMREF',	'N_HET', 'N_HOMALT', 'FREQ_HOMREF',	'FREQ_HET',	'FREQ_HOMALT',	'POPMAX_AF']
         gnomad_ann_cols = ['gnomAD_SVTYPE', 'gnomAD_AN', 'gnomAD_AC', 'gnomAD_AF', 'gnomAD_N_HOMREF', 'gnomAD_N_HET', 'gnomAD_N_HOMALT', 'gnomAD_FREQ_HOMREF', 'gnomAD_FREQ_HET', 'gnomAD_FREQ_HOMALT', 'gnomAD_POPMAX_AF']
         gnomad_df = pd.read_csv(gnomad, sep='\t', dtype='str').astype(str)
@@ -361,8 +363,9 @@ class SVAnnotator:
         gene_df[gene_df.columns] = gene_df.groupby(gene_df.index).agg(list)[gene_df.columns]
 
         # add cardinality columns
-        gene_df["N_UNIQUE_HPO_TERMS"] = [ [count_unique_terms(values["HPO Features"])] for index, values in gene_df.iterrows()]
-        gene_df["N_GENES_IN_HPO"] = [ [count_unique_terms(values["Genes in HPO"])] for index, values in gene_df.iterrows()]
+        if self.HPO:
+            gene_df["N_UNIQUE_HPO_TERMS"] = [ [count_unique_terms(values["HPO Features"])] for index, values in gene_df.iterrows()]
+            gene_df["N_GENES_IN_HPO"] = [ [count_unique_terms(values["Genes in HPO"])] for index, values in gene_df.iterrows()]
         gene_df["N_GENES_IN_OMIM"] = [ [count_unique_terms(values["Genes in OMIM"])] for index, values in gene_df.iterrows()]
 
         # parse out and replace nan values with "na" string
