@@ -88,10 +88,10 @@ class SVGrouper:
         ann_df = pd.concat(ann_dfs).astype(str).drop_duplicates().rename(columns=self.index_cols).set_index(list(self.index_cols.values())) if ann_fields else pd.DataFrame()
         return BedTool(intervals), ann_df, sample_names
 
-    def _group_sv(self, bedtool):
+    def _group_sv(self, bedtool, reciprocal_overlap=0.9):
         already_grouped_intervals = set()
 
-        for l in bedtool.intersect(bedtool, wa=True, wb=True, F=0.5, f=0.5):
+        for l in bedtool.intersect(bedtool, wa=True, wb=True, F=reciprocal_overlap, f=reciprocal_overlap):
 
             ref_chr, ref_start, ref_end, ref_svtype, ref_gt, ref_genes, ref_name, \
             samp_chr, samp_start, samp_end, samp_svtype, samp_gt, samp_genes, samp_name = l
