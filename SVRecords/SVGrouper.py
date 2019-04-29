@@ -23,7 +23,7 @@ class SVGrouper:
         self.sample_list = sample_list
         self.df = pd.DataFrame(columns=columns).set_index(keys=list(self.index_cols.values()))
         self._group_sv(all_sv)
-        self.df['Ensembl Gene ID'] = self.df['Ensembl Gene ID'].apply(lambda gene_list: list(set(gene_list.split(','))) if ',' in gene_list else gene_list) #list set typecast is to ensure that we get a list of unique ensemble identifiers
+        self.df['Ensembl Gene ID'] = self.df['Ensembl Gene ID'].apply(lambda gene_list: list(set(gene_list.split(','))) if ',' in gene_list else [gene_list]) #list set typecast is to ensure that we get a list of unique ensemble identifiers
         self.bedtool = self.make_ref_bedtool()
 
         for name in self.sample_list:
@@ -85,7 +85,8 @@ class SVGrouper:
             if ann_fields:
                 ann_dfs.append(df[index_fields + ann_fields])
 
-        ann_df = pd.concat(ann_dfs).astype(str).drop_duplicates().rename(columns=self.index_cols).set_index(list(self.index_cols.values())) if ann_fields else pd.DataFrame()
+        ann_df = pd.concat(ann_dfs).astype(str).rename(columns=self.index_cols).set_index(list(self.index_cols.values())) if ann_fields else pd.DataFrame()
+        ann_df = ann_df[~ann_df.index.duplicated(keep='first')] #annotations for the same SV in a vcf can have slighly differing fields (ex. SVSCORE_MEAN)
         return BedTool(intervals), ann_df, sample_names
 
     def _group_sv(self, bedtool, reciprocal_overlap=0.9):

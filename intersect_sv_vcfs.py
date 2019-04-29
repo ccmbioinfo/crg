@@ -8,7 +8,8 @@ def main(exon_bed, hgmd_db, hpo, exac, omim, biomart, gnomad, outfile_name, vcfs
     print("Grouping like structural variants ...")
     sv_records = SVGrouper(vcfs, ann_fields=SVScore_cols)
     sample_cols = [ col for col in sv_records.df.columns if col != "Ensembl Gene ID" ]
-    sample_genotype_cols = [col for col in sample_cols if col.endswith('_GENOTYPE')]    
+    sample_genotype_cols = [col for col in sample_cols if col.endswith('_GENOTYPE')]
+    # sv_records.df.to_csv('grouped.tsv', sep='\t')
 
     print('Annotating structural variants ...')
     ann_records = SVAnnotator(exon_bed, hgmd_db, hpo, exac, omim, biomart)
@@ -16,6 +17,7 @@ def main(exon_bed, hgmd_db, hpo, exac, omim, biomart, gnomad, outfile_name, vcfs
     sv_records.df = ann_records.annotsv(sv_records.df)
     sv_records.df = ann_records.calc_exons_spanned(sv_records.df, exon_bed)
     ann_records.annotate_gnomad(gnomad, sv_records)
+    sv_records.df = ann_records.annotate_hgmd(hgmd_db, sv_records.df)
     ann_records.add_decipher_link(sv_records.df)
 
     if not set(HPO_cols).issubset(set(sv_records.df.columns)):

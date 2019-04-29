@@ -34,8 +34,6 @@ class SVAnnotator:
         self.annotate_omim(omim)
         print('Annotating genes with ExAC transcript probabilities')
         self.annotate_exac(exac)
-        print('Annotating genes with published cases of pathogenic structural variants from HGMD')
-        self.annotate_hgmd(hgmd_db)
 
         # technical note: drop duplicates before setting index - doing the reverse order will drop all duplicated columns instead of keeping one copy
         self.gene_ref_df = self.gene_ref_df.drop_duplicates(keep='first').set_index('BioMart Ensembl Gene ID').astype(str)
@@ -101,7 +99,9 @@ class SVAnnotator:
 
         return sample_df.join(count_df).fillna(value={'EXONS_SPANNED': 0})
 
-    def annotate_hgmd(self, hgmd):
+    def annotate_hgmd(self, hgmd, sv_record):
+        print('Annotating genes with published cases of pathogenic structural variants from HGMD')
+
         def get_hgmd_df():
             conn = sqlite3.connect(hgmd)
 
@@ -144,10 +144,6 @@ class SVAnnotator:
             #df['omimid'] = df['omimid'].apply(lambda col: col.split(', ')[0])
             return df
         
-        matching_fields = {
-            "HGMD gene" : "BioMart Associated Gene Name",
-        }
-
         hgmd_sv_df = pd.DataFrame()
         gros_del, gros_ins, gros_dup = get_hgmd_df()
 
@@ -163,10 +159,12 @@ class SVAnnotator:
         gros_ins['HGMD SVTYPE'] = SVTYPE.INS.value
         gros_dup['HGMD SVTYPE'] = SVTYPE.DUP.value
 
-        hgmd_sv_df = pd.concat([gros_del, gros_ins, gros_dup], ignore_index=True, sort=False).drop_duplicates().astype(str)
-        hgmd_sv_df['Genes in HGMD'] = hgmd_sv_df["HGMD gene"]
+        # hgmd_sv_df = hgmd_sv_df.rename(columns={'HGMD gene': 'Genes in HGMD'})
+        hgmd_sv_df = pd.concat([gros_del, gros_ins, gros_dup], ignore_index=True, sort=False)
+        hgmd_sv_df['Genes in HGMD'] = hgmd_sv_df['HGMD gene']
+        hgmd_sv_df = hgmd_sv_df.set_index(keys=['HGMD gene', 'HGMD SVTYPE']).astype(str)
 
-        self.gene_ref_df = self.left_join(self.gene_ref_df, hgmd_sv_df, "BioMart Associated Gene Name", "HGMD gene")
+        return sv_record.join(hgmd_sv_df, on=['BioMart Associated Gene Name', 'SVTYPE'], how='left')
 
     def prioritized_annotation(self, gene_ref_df, annotation_df, matched_fields):
         matched_rows = []
@@ -335,7 +333,6 @@ class SVAnnotator:
         self.gene_ref_df = df
     
     def annotate_genes(self, sample_df, gene_col):
-
         def count_unique_terms(cell):
             terms = set()
 
@@ -350,17 +347,17 @@ class SVAnnotator:
             return len(terms)
 
         # extract genes from sample_df, create a new dataframe where each row only has a single ensemble id and interval info
-        gene_df = sample_df.apply(lambda x: pd.Series(x[gene_col]),axis=1).stack().reset_index(level=4, drop=True)
-        gene_df.name = gene_col
-        gene_df = gene_df.to_frame().drop_duplicates().astype(str)
+        gene_df = sample_df[gene_col].apply(lambda x: pd.Series(x[0]))
+        gene_df = gene_df.rename(columns={0: gene_col})
+        # gene_df.to_csv('seperated_genes.csv')
 
         # annotate passed in ensemble gene id's using the generated reference dataframe
-        gene_df = gene_df.join(self.gene_ref_df, on=gene_col).drop_duplicates().reset_index()
-        # parse out hgmd gene annotations who's SVTYPE does not match up with the sample's
-        gene_df = gene_df[ (gene_df['SVTYPE'] == gene_df['HGMD SVTYPE']) | (pd.isnull(gene_df['HGMD SVTYPE'])) | (gene_df['HGMD SVTYPE'] == 'nan') ].set_index(['CHROM', 'POS', 'END', 'SVTYPE'])
+        gene_df = gene_df.join(self.gene_ref_df, on=gene_col, how='left').reset_index()
+        # gene_df.to_csv('annotated_genes.csv')
 
         # aggregate all annotation columns within the same sv interval
-        gene_df[gene_df.columns] = gene_df.groupby(gene_df.index).agg(list)[gene_df.columns]
+        gene_df = gene_df.groupby(['CHROM', 'POS', 'END', 'SVTYPE']).agg(list)
+        # gene_df.to_csv('grouped_index.csv')
 
         # add cardinality columns
         if self.HPO:
@@ -374,7 +371,7 @@ class SVAnnotator:
         gene_df[gene_df.columns] = gene_df[gene_df.columns].applymap(lambda cell: ["na" if "nan" == item.lower() else item for item in cell])
 
         gene_df[gene_df.columns] = gene_df[gene_df.columns].applymap(lambda cell: ' | '.join(cell))
-        gene_df = gene_df[gene_df.columns].drop_duplicates()
+        gene_df = gene_df[gene_df.columns]
 
         # annotate the passed in dataframe
         sample_df = sample_df.drop(gene_col, axis=1).join(gene_df)
