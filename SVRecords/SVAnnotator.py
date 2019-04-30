@@ -280,7 +280,7 @@ class SVAnnotator:
         self.gene_ref_df = self.prioritized_annotation(self.gene_ref_df, exac_df, matching_fields)
         #self.gene_ref_df.to_csv("exac_ann.tsv", sep="\t")
 
-    def annotate_gnomad(self, gnomad, sv_record, reciprocal_overlap=0.9):
+    def annotate_gnomad(self, gnomad, sv_record, reciprocal_overlap=0.5):
         print('Annotating structural variants with those seen in gnomAD_SV based on a %f reciprocal overlap ...' % reciprocal_overlap)
 
         gnomad_cols = ['CHROM',	'START', 'END', 'NAME',	'SVTYPE', 'AN',	'AC', 'AF', 'N_HOMREF',	'N_HET', 'N_HOMALT', 'FREQ_HOMREF',	'FREQ_HET',	'FREQ_HOMALT',	'POPMAX_AF']
@@ -292,15 +292,17 @@ class SVAnnotator:
         gnomad_bed = BedTool(gnomad_df.itertuples(index=False))
 
         sample_sv = sv_record.make_ref_bedtool()
-        sv_record.df[gnomad_ann_cols] = pd.DataFrame([["NA" for field in gnomad_ann_cols]], index=sv_record.df.index)
 
-        for ann in sample_sv.intersect(gnomad_bed, wa=True, wb=True, F=reciprocal_overlap, f=reciprocal_overlap):
+        ann_df = sample_sv.intersect(gnomad_bed, wa=True, wb=True, F=reciprocal_overlap, f=reciprocal_overlap).to_dataframe(\
+        names=['CHROM',	'POS', 'END', 'SVTYPE', 'gnomAD_CHROM', 'gnomAD_START', 'gnomAD_END', 'gnomAD_ID', ] + gnomad_ann_cols).astype(str)
+        ann_df = ann_df.drop(ann_df[ann_df['SVTYPE'] != ann_df['gnomAD_SVTYPE']].index)
 
-            samp_chr, samp_start, samp_end, samp_svtype = ann[0:4]
-            gnomad_chr, gnomad_start, gnomad_end, gnomad_id, gnomad_svtype = ann[4:9]
+        ann_df['gnomAD_SV'] = ann_df[['gnomAD_CHROM', 'gnomAD_START', 'gnomAD_END']].apply(lambda x: '{}:{}-{}'.format(x[0],x[1],x[2]), axis=1)
+        ann_df = ann_df.drop(columns=['gnomAD_CHROM', 'gnomAD_START', 'gnomAD_END'])
+        ann_df = ann_df.groupby(['CHROM', 'POS', 'END', 'SVTYPE']).agg(list)
+        ann_df = ann_df[ann_df.columns].applymap(lambda cell: ' & '.join(cell))
 
-            if gnomad_svtype == samp_svtype:
-                sv_record.df.loc[(samp_chr, samp_start, samp_end, samp_svtype), gnomad_ann_cols] = ann[8:20]
+        return sv_record.df.join(ann_df)
 
     def annotsv(self, sample_df):
         '''

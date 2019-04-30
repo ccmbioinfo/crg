@@ -16,7 +16,7 @@ def main(exon_bed, hgmd_db, hpo, exac, omim, biomart, gnomad, outfile_name, vcfs
     sv_records.df = ann_records.annotate_genes(sv_records.df, "Ensembl Gene ID")
     sv_records.df = ann_records.annotsv(sv_records.df)
     sv_records.df = ann_records.calc_exons_spanned(sv_records.df, exon_bed)
-    ann_records.annotate_gnomad(gnomad, sv_records)
+    sv_records.df = ann_records.annotate_gnomad(gnomad, sv_records)
     sv_records.df = ann_records.annotate_hgmd(hgmd_db, sv_records.df)
     ann_records.add_decipher_link(sv_records.df)
 
@@ -33,7 +33,7 @@ def main(exon_bed, hgmd_db, hpo, exac, omim, biomart, gnomad, outfile_name, vcfs
     [ "DECIPHER_LINK" ] + \
     [ "ExAC syn_z", "ExAC mis_z", "ExAC lof_z", "ExAC pLI" ] + \
     [ "Genes in HGMD", "HGMD disease", "HGMD tag", "HGMD descr", "HGMD JOURNAL_DETAILS" ] + \
-    [ "gnomAD_SVTYPE", "gnomAD_AN", "gnomAD_AC", "gnomAD_AF", "gnomAD_N_HOMREF", "gnomAD_N_HET", "gnomAD_N_HOMALT", "gnomAD_FREQ_HOMREF", "gnomAD_FREQ_HET", "gnomAD_FREQ_HOMALT", "gnomAD_POPMAX_AF"] + \
+    [ "gnomAD_SV", "gnomAD_AN", "gnomAD_AC", "gnomAD_AF", "gnomAD_N_HOMREF", "gnomAD_N_HET", "gnomAD_N_HOMALT", "gnomAD_FREQ_HOMREF", "gnomAD_FREQ_HET", "gnomAD_FREQ_HOMALT", "gnomAD_POPMAX_AF"] + \
     sample_genotype_cols + \
     SVScore_cols ] 
     sv_records.df.columns = sv_records.df.columns.str.replace('variants/','')
