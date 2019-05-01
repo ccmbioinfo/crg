@@ -2,7 +2,7 @@ import argparse
 from SVRecords import SVGrouper, SVAnnotator
 
 def main(exon_bed, hgmd_db, hpo, exac, omim, biomart, gnomad, outfile_name, vcfs):
-    SVScore_cols = ['variants/SVSCORESUM', 'variants/SVSCOREMAX', 'variants/SVSCORETOP5', 'variants/SVSCORETOP10', 'variants/SVSCOREMEAN',]
+    SVScore_cols = ['variants/SVLEN', 'variants/SVSCORESUM', 'variants/SVSCOREMAX', 'variants/SVSCORETOP5', 'variants/SVSCORETOP10', 'variants/SVSCOREMEAN',]
     HPO_cols = [ "N_UNIQUE_HPO_TERMS", "HPO Features", "N_GENES_IN_HPO", "Genes in HPO" ]
 
     print("Grouping like structural variants ...")
