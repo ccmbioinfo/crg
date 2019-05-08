@@ -3,7 +3,7 @@
 #PBS -l walltime=00:30:00,nodes=1:ppn=2
 #PBS -joe .
 #PBS -d .
-#PBS -l vmem=5g,mem=5g
+#PBS -l vmem=20g,mem=20g
 
 TODAY=`date +%Y-%m-%d`
 if [ -z $1 ]; then

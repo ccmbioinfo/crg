@@ -316,7 +316,7 @@ class SVAnnotator:
         annotsv_df = pd.read_csv(annotated, sep='\t').astype(str)
         annotsv_df = annotsv_df.loc[annotsv_df['AnnotSV type'] == 'full']
         annotsv_df = annotsv_df.rename(columns={annotsv_df.columns[0]: 'CHROM', annotsv_df.columns[1]: 'POS', annotsv_df.columns[2]: 'END', annotsv_df.columns[3]:'SVTYPE'}).set_index(keys=['CHROM', 'POS', 'END', 'SVTYPE'])
-        annotsv_df = annotsv_df[annotsv_df.columns[13:22]] # all dgv and ddd columns
+        annotsv_df = annotsv_df[ [col for col in annotsv_df.columns if "DDD" in col.upper() or "DGV" in col.upper()] ] # all dgv and ddd columns
         sample_df = sample_df.join(annotsv_df)
 
         os.remove(all_sv_bed_name)
@@ -349,8 +349,8 @@ class SVAnnotator:
             return len(terms)
 
         # extract genes from sample_df, create a new dataframe where each row only has a single ensemble id and interval info
-        gene_df = sample_df[gene_col].apply(lambda x: pd.Series(x[0]))
-        gene_df = gene_df.rename(columns={0: gene_col})
+        gene_df = sample_df.apply(lambda x: pd.Series(x[gene_col]),axis=1).stack().reset_index(level=4, drop=True)
+        gene_df = gene_df.to_frame().rename(columns={0: gene_col}).astype(str)
         # gene_df.to_csv('seperated_genes.csv')
 
         # annotate passed in ensemble gene id's using the generated reference dataframe
