@@ -315,7 +315,7 @@ class SVAnnotator:
 
         annotsv_df = pd.read_csv(annotated, sep='\t').astype(str)
         annotsv_df = annotsv_df.loc[annotsv_df['AnnotSV type'] == 'full']
-        annotsv_df = annotsv_df.rename(columns={annotsv_df.columns[0]: 'CHROM', annotsv_df.columns[1]: 'POS', annotsv_df.columns[2]: 'END', annotsv_df.columns[3]:'SVTYPE'}).set_index(keys=['CHROM', 'POS', 'END', 'SVTYPE'])
+        annotsv_df = annotsv_df.rename(columns={annotsv_df.columns[1]: 'CHROM', annotsv_df.columns[2]: 'POS', annotsv_df.columns[3]: 'END', annotsv_df.columns[5]:'SVTYPE'}).set_index(keys=['CHROM', 'POS', 'END', 'SVTYPE'])
         annotsv_df = annotsv_df[ [col for col in annotsv_df.columns if "DDD" in col.upper() or "DGV" in col.upper()] ] # all dgv and ddd columns
         sample_df = sample_df.join(annotsv_df)
 
