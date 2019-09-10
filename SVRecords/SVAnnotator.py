@@ -16,6 +16,7 @@ class SVTYPE(Enum):
     INS = auto()
     INV = auto()
     IDP = auto()
+    TRA = auto()
 
 class SVAnnotator:
     def __init__(self, exon_bed, hgmd_db, hpo, exac, omim, biomart):
@@ -299,6 +300,27 @@ class SVAnnotator:
 
         ann_df['gnomAD_SV'] = ann_df[['gnomAD_CHROM', 'gnomAD_START', 'gnomAD_END']].apply(lambda x: '{}:{}-{}'.format(x[0],x[1],x[2]), axis=1)
         ann_df = ann_df.drop(columns=['gnomAD_CHROM', 'gnomAD_START', 'gnomAD_END'])
+        ann_df = ann_df.groupby(['CHROM', 'POS', 'END', 'SVTYPE']).agg(list)
+        ann_df = ann_df[ann_df.columns].applymap(lambda cell: ' & '.join(cell))
+
+        return sv_record.df.join(ann_df)
+
+    def annotate_counts(self, counts, sv_record, prefix="", reciprocal_overlap=0.5):
+        print('Annotating structural variants with those seen in %s based on a %f reciprocal overlap ...' % (counts, reciprocal_overlap))
+
+        cols = ['COUNT_CHROM', 'COUNT_START', 'COUNT_END', 'COUNT_SVTYPE', 'COUNT' if not prefix else '%s_COUNT' % prefix]
+        
+        count_df = pd.read_csv(counts, sep='\t', dtype='str').astype(str)
+        count_bed = BedTool(count_df.itertuples(index=False))
+
+        sample_sv = sv_record.make_ref_bedtool()
+
+        ann_df = sample_sv.intersect(count_bed, wa=True, wb=True, F=reciprocal_overlap, f=reciprocal_overlap).to_dataframe(\
+        names=['CHROM',	'POS', 'END', 'SVTYPE', ] + cols).astype(str)
+        ann_df = ann_df.drop(ann_df[ann_df['SVTYPE'] != ann_df['COUNT_SVTYPE']].index)
+
+        ann_df['COUNT_SV' if not prefix else '%s_SV' % prefix] = ann_df[['COUNT_CHROM', 'COUNT_START', 'COUNT_END']].apply(lambda x: '{}:{}-{}'.format(x[0],x[1],x[2]), axis=1)
+        ann_df = ann_df.drop(columns=['COUNT_CHROM', 'COUNT_START', 'COUNT_END'])
         ann_df = ann_df.groupby(['CHROM', 'POS', 'END', 'SVTYPE']).agg(list)
         ann_df = ann_df[ann_df.columns].applymap(lambda cell: ' & '.join(cell))
 

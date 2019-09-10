@@ -74,12 +74,21 @@ class SVGrouper:
             # remove empty strings, split on delimited characters, then join using comma
             vcf_dict['variants/ANN_Gene_ID'] = [list(filter(None, ann)) for ann in vcf_dict['variants/ANN_Gene_ID']] #by default, specifying numbers=1000 creates 1000 elements, with most being empty
             vcf_dict['variants/ANN_Gene_ID'] = [split_Ensembl_ids(id_list) if any('&' in id for id in id_list) or any('-' in id for id in id_list) else id_list for id_list in vcf_dict['variants/ANN_Gene_ID']]
-            vcf_dict['variants/ANN_Gene_ID'] = [','.join(id_list) if isinstance(id_list, list) else id_list for id_list in vcf_dict['variants/ANN_Gene_ID']]
+            vcf_dict['variants/ANN_Gene_ID'] = [','.join(list(set(id_list))) if isinstance(id_list, list) else id_list for id_list in vcf_dict['variants/ANN_Gene_ID']]
 
             vcf_dict['calldata/GT'] = np.array(['HET' if 0 in gt and 1 in gt else 'HOM' for gt in vcf_dict.pop('calldata/GT')])
 
             df = pd.DataFrame(vcf_dict)
             df['samples'] = name
+
+            # workaround for START > END so BedTool doesn't freak out using MalformedBedError
+            # START > END is the case for TRV, INV
+            s = df['variants/END'] < df['variants/POS']
+            df.loc[s, ['variants/END','variants/POS']] = df.loc[s, ['variants/POS','variants/END']].values
+            df['variants/POS'] = df['variants/POS'].astype(int)
+            df['variants/END'] = df['variants/END'].astype(int)
+            df = df.drop_duplicates()
+
             intervals.extend(df[sample_sv_fields].itertuples(index=False))
 
             if ann_fields:
@@ -87,9 +96,13 @@ class SVGrouper:
 
         ann_df = pd.concat(ann_dfs).astype(str).rename(columns=self.index_cols).set_index(list(self.index_cols.values())) if ann_fields else pd.DataFrame()
         ann_df = ann_df[~ann_df.index.duplicated(keep='first')] #annotations for the same SV in a vcf can have slighly differing fields (ex. SVSCORE_MEAN)
+
+        for i in intervals:
+            print(i)
+
         return BedTool(intervals), ann_df, sample_names
 
-    def _group_sv(self, bedtool, reciprocal_overlap=0.9):
+    def _group_sv(self, bedtool, reciprocal_overlap=1.0):
         already_grouped_intervals = set()
 
         for l in bedtool.intersect(bedtool, wa=True, wb=True, F=reciprocal_overlap, f=reciprocal_overlap):
