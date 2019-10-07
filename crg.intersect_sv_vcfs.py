@@ -14,7 +14,10 @@ def main(exon_bed, hgmd_db, hpo, exac, omim, biomart, gnomad, sv_counts, outfile
     print('Annotating structural variants ...')
     ann_records = SVAnnotator(exon_bed, hgmd_db, hpo, exac, omim, biomart)
     sv_records.df = ann_records.annotate_genes(sv_records.df, "Ensembl Gene ID")
-    sv_records.df = ann_records.annotate_counts(sv_counts, sv_records, prefix="MSSNG_MANTA")
+
+    for sv_count in sv_counts:
+        sv_records.df = ann_records.annotate_counts(sv_count, sv_records, prefix=sv_count)
+    
     sv_records.df = ann_records.annotsv(sv_records.df)
     sv_records.df = ann_records.calc_exons_spanned(sv_records.df, exon_bed)
     sv_records.df = ann_records.annotate_gnomad(gnomad, sv_records)
@@ -53,7 +56,7 @@ if __name__ == "__main__":
     parser.add_argument('-omim', help='OMIM tab delimited file containing gene names and scores', type=str, required=True)
     parser.add_argument('-biomart', help='TSV file from BiomaRt containing Ensemble gene ID, transcript ID, gene name, MIM gene id, HGNC id, EntrezGene ID', type=str, required=True)
     parser.add_argument('-gnomad', help='BED file from Gnomad containing structural variant coordinates and frequencies across populations', type=str, required=True)
-    parser.add_argument('-sv_counts', help='Any BED file containing structural variants and their frequencies across populations', type=str, required=False)
+    parser.add_argument('-sv_counts', nargs='+', help='List of BED files containing structural variants and their frequencies. Can be used to annotate with various populations and variant callers', required=False)
     parser.add_argument('-overlap', help='Recipricol overlap to group a structural variant by', type=float, default=0.5)
     parser.add_argument('-o', help='Output file name e.g. -o 180.sv.family.tsv', required=True, type=str)
     args = parser.parse_args()
