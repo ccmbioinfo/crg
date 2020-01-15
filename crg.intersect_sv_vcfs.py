@@ -1,22 +1,33 @@
 import argparse
+import pandas as pd
+from pathlib import Path
 from SVRecords import SVGrouper, SVAnnotator
 
-def main(exon_bed, hgmd_db, hpo, exac, omim, biomart, gnomad, sv_counts, outfile_name, vcfs):
+def make_exon_gene_set(protein_coding_genes):
+    df = pd.read_csv(protein_coding_genes, sep="\t")
+    return(set(df[df.columns[5]]))
+
+def main(protein_coding_genes, exon_bed, hgmd_db, hpo, exac, omim, biomart, gnomad, sv_counts, outfile_name, vcfs):
     SVScore_cols = ['variants/SVLEN', 'variants/SVSCORESUM', 'variants/SVSCOREMAX', 'variants/SVSCORETOP5', 'variants/SVSCORETOP10', 'variants/SVSCOREMEAN',]
+    MetaSV_cols = ['variants/NUM_SVTOOLS', 'variants/NORMAL_COUNT', 'variants/NUM_READS',]
     HPO_cols = [ "N_UNIQUE_HPO_TERMS", "HPO Features", "N_GENES_IN_HPO", "Genes in HPO" ]
+    protein_coding_ENSG = make_exon_gene_set(protein_coding_genes)
 
     print("Grouping like structural variants ...")
-    sv_records = SVGrouper(vcfs, ann_fields=SVScore_cols)
+    sv_records = SVGrouper(vcfs, ann_fields=SVScore_cols + MetaSV_cols)
     sample_cols = [ col for col in sv_records.df.columns if col != "Ensembl Gene ID" ]
     sample_genotype_cols = [col for col in sample_cols if col.endswith('_GENOTYPE')]
-    # sv_records.df.to_csv('grouped.tsv', sep='\t')
+
+    print("Identifying protein coding genes ...")
+    sv_records.df['Protein-coding Ensembl Gene ID'] = sv_records.df['Ensembl Gene ID'].apply(lambda gene_list: [gene for gene in gene_list if gene in protein_coding_ENSG])
 
     print('Annotating structural variants ...')
     ann_records = SVAnnotator(exon_bed, hgmd_db, hpo, exac, omim, biomart)
-    sv_records.df = ann_records.annotate_genes(sv_records.df, "Ensembl Gene ID")
+    sv_records.df = ann_records.annotate_genes(sv_records.df, "Protein-coding Ensembl Gene ID")
 
     for sv_count in sv_counts:
-        sv_records.df = ann_records.annotate_counts(sv_count, sv_records, prefix=sv_count)
+        prefix = Path(sv_count).stem
+        sv_records.df = ann_records.annotate_counts(sv_count, sv_records, prefix=prefix)
     
     sv_records.df = ann_records.annotsv(sv_records.df)
     sv_records.df = ann_records.calc_exons_spanned(sv_records.df, exon_bed)
@@ -49,6 +60,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Generates a structural variant report in CSV format for clincal research')
     parser.add_argument('-i', type=str, nargs='+', help='VCF files containing structural variants, e.g. -i 180_230.vcf 180_231.vcf', required=True)
+    parser.add_argument('-protein_coding_genes', help='BED file containing protein coding gene regions with their ENSG id\'s', required=True)
     parser.add_argument('-exon_bed', help='BED file containing fixed exon positions', required=True)
     parser.add_argument('-hgmd', help='HGMD Pro database file', required=True, type=str)
     parser.add_argument('-hpo', help='Tab delimited file containing gene names and HPO terms', type=str)
@@ -64,4 +76,4 @@ if __name__ == "__main__":
     if len(args.i) == 0:
         ValueError('Please enter the path to some vcf\'s following the -i flag')
     else:
-        main(args.exon_bed, args.hgmd, args.hpo, args.exac, args.omim, args.biomart, args.gnomad, args.sv_counts, args.o, args.i)
+        main(args.protein_coding_genes, args.exon_bed, args.hgmd, args.hpo, args.exac, args.omim, args.biomart, args.gnomad, args.sv_counts, args.o, args.i)

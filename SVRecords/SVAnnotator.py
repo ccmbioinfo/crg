@@ -319,8 +319,6 @@ class SVAnnotator:
         names=['CHROM',	'POS', 'END', 'SVTYPE', ] + cols)
         ann_df[['CHROM', 'POS', 'END', 'SVTYPE', ]] = ann_df[['CHROM',	'POS', 'END', 'SVTYPE', ]].astype(str) # reference dataframe is typecasted as string
         ann_df = ann_df.drop(ann_df[ann_df['SVTYPE'] != ann_df['COUNT_SVTYPE']].index)
-
-        ann_df.to_csv("Annotated_Counts.tsv", sep="\t")
         
         ann_df = ann_df.groupby(['CHROM', 'POS', 'END', 'SVTYPE']).agg({'COUNT_CHROM' : 'first', 'COUNT_SVTYPE' : 'first', 'COUNT_START' : 'min', 'COUNT_END' : 'max', 'COUNT' : 'sum'})
         ann_df['COUNT_SV'] = ann_df[['COUNT_CHROM', 'COUNT_START', 'COUNT_END']].apply(lambda x: '{}:{}-{}'.format(x[0],x[1],x[2]), axis=1)

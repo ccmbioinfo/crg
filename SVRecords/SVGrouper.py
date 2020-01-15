@@ -102,7 +102,7 @@ class SVGrouper:
 
         return BedTool(intervals), ann_df, sample_names
 
-    def _group_sv(self, bedtool, reciprocal_overlap=1.0):
+    def _group_sv(self, bedtool, reciprocal_overlap=0.5):
         already_grouped_intervals = set()
 
         for l in bedtool.intersect(bedtool, wa=True, wb=True, F=reciprocal_overlap, f=reciprocal_overlap):
