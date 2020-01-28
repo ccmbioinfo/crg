@@ -9,7 +9,7 @@ def make_exon_gene_set(protein_coding_genes):
 
 def main(protein_coding_genes, exon_bed, hgmd_db, hpo, exac, omim, biomart, gnomad, sv_counts, outfile_name, vcfs):
     SVScore_cols = ['variants/SVLEN', 'variants/SVSCORESUM', 'variants/SVSCOREMAX', 'variants/SVSCORETOP5', 'variants/SVSCORETOP10', 'variants/SVSCOREMEAN',]
-    MetaSV_cols = ['variants/NUM_SVTOOLS', 'variants/NORMAL_COUNT', 'variants/NUM_READS',]
+    MetaSV_cols = ['variants/NUM_SVTOOLS']
     HPO_cols = [ "N_UNIQUE_HPO_TERMS", "HPO Features", "N_GENES_IN_HPO", "Genes in HPO" ]
     protein_coding_ENSG = make_exon_gene_set(protein_coding_genes)
 
