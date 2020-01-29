@@ -7,7 +7,7 @@ details:
     remove_lcr: false
     mark_duplicates: true
     save_diskspace: true
-    svcaller: [lumpy, manta, metasv, wham]
+    svcaller: [lumpy, manta, wham]
     tools_on:
     - svplots
     - qualimap
