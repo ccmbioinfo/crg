@@ -63,9 +63,8 @@ Some SV callers (manta) are sensitive to reads mapped to decoy even with one mat
 	`qsub ~/cre/cre.sh -v family=project,type=wgs`
 3. noncoding variants for gene panels with flank\
 	3.1 modify bed file, add 100k bp to each gene start and end:\
-	`cat panel.bed | awk -F "\t" '{print $1"\t"$2-100000"\t"$3+100000}'`\
+	`crg.flank.sh panel.bed > panel.flank.100k.bed`\
 	3.2 proceed as for noncoding small variant report
-4. de-novo variants for trios
 
 # 7. Call structural variants (in parallel with step 3)
 1. MetaSV uses spades (a genome assembler) for every SV, making bcbio run computationally intensive. To speed up call samples individually.\
