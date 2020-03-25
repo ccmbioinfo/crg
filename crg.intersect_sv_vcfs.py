@@ -9,13 +9,14 @@ def make_exon_gene_set(protein_coding_genes):
 
 def main(protein_coding_genes, exon_bed, hgmd_db, hpo, exac, omim, biomart, gnomad, sv_counts, outfile_name, vcfs):
     SVScore_cols = ['variants/SVLEN', 'variants/SVSCORESUM', 'variants/SVSCOREMAX', 'variants/SVSCORETOP5', 'variants/SVSCORETOP10', 'variants/SVSCOREMEAN',]
-    MetaSV_cols = ['variants/NUM_SVTOOLS']
+    MetaSV_col = 'variants/NUM_SVTOOLS'
     HPO_cols = [ "N_UNIQUE_HPO_TERMS", "HPO Features", "N_GENES_IN_HPO", "Genes in HPO" ]
+    Protein_coding_genes_col = "Protein-coding Ensembl Gene ID"
     protein_coding_ENSG = make_exon_gene_set(protein_coding_genes)
 
     print("Grouping like structural variants ...")
-    sv_records = SVGrouper(vcfs, ann_fields=SVScore_cols + MetaSV_cols)
-    sample_cols = [ col for col in sv_records.df.columns if col != "Ensembl Gene ID" ]
+    sv_records = SVGrouper(vcfs, ann_fields=SVScore_cols + [MetaSV_col])
+    sample_cols = [ col for col in sv_records.df.columns if col != MetaSV_col ]
     sample_genotype_cols = [col for col in sample_cols if col.endswith('_GENOTYPE')]
 
     print("Identifying protein coding genes ...")
@@ -23,7 +24,7 @@ def main(protein_coding_genes, exon_bed, hgmd_db, hpo, exac, omim, biomart, gnom
 
     print('Annotating structural variants ...')
     ann_records = SVAnnotator(exon_bed, hgmd_db, hpo, exac, omim, biomart)
-    sv_records.df = ann_records.annotate_genes(sv_records.df, "Protein-coding Ensembl Gene ID")
+    sv_records.df = ann_records.annotate_genes(sv_records.df, Protein_coding_genes_col)
 
     for sv_count in sv_counts:
         prefix = Path(sv_count).stem
@@ -40,18 +41,26 @@ def main(protein_coding_genes, exon_bed, hgmd_db, hpo, exac, omim, biomart, gnom
             sv_records.df[col] = "na"
 
     # format and rearrange the columns
-    # sv_records.df = sv_records.df[ [col for col in sample_cols if col not in SVScore_cols and col not in sample_genotype_cols] + \
-    # [ "EXONS_SPANNED", "Ensembl Gene ID", "BioMart Associated Gene Name", ] + \
-    # [ "N_UNIQUE_HPO_TERMS", "HPO Features", "N_GENES_IN_HPO", "Genes in HPO" ] + \
-    # [ "N_GENES_IN_OMIM", "Genes in OMIM", "OMIM Phenotypes", "OMIM Mim Number", "OMIM Inheritance" ] + \
-    # [ "DGV_LOSS_IDs", "DGV_LOSS_n_samples_with_SV", "DGV_LOSS_n_samples_tested", "DGV_LOSS_Frequency", "DDD_SV", "DDD_DUP_n_samples_with_SV", "DDD_DUP_Frequency", "DDD_DEL_n_samples_with_SV", "DDD_DEL_Frequency" ] + \
-    # [ "DECIPHER_LINK" ] + \
-    # [ "ExAC syn_z", "ExAC mis_z", "ExAC lof_z", "ExAC pLI" ] + \
-    # [ "Genes in HGMD", "HGMD disease", "HGMD tag", "HGMD descr", "HGMD JOURNAL_DETAILS" ] + \
-    # [ "gnomAD_SV", "gnomAD_AN", "gnomAD_AC", "gnomAD_AF", "gnomAD_N_HOMREF", "gnomAD_N_HET", "gnomAD_N_HOMALT", "gnomAD_FREQ_HOMREF", "gnomAD_FREQ_HET", "gnomAD_FREQ_HOMALT", "gnomAD_POPMAX_AF"] + \
-    # sample_genotype_cols + \
-    # SVScore_cols ] 
+    sv_records.df = sv_records.df[ [col for col in sample_cols if col not in set(SVScore_cols + sample_genotype_cols + ['N_SAMPLES', 'Ensembl Gene ID']) ] + \
+    [ 'variants/SVLEN', ] + \
+    [ MetaSV_col ] + \
+    [ Protein_coding_genes_col ] + \
+    [ "BioMart Associated Gene Name", "EXONS_SPANNED", ] + \
+    [ "Genes in HPO", "HPO Features", ] + \
+    [ "Genes in OMIM", "OMIM Phenotypes", "OMIM Inheritance", ] + \
+    [ "N_GENES_IN_HPO", "N_UNIQUE_HPO_TERMS", "N_GENES_IN_OMIM", ] + \
+    [ "Canadian_MSSNG_parent_SVs.Manta.counts", "Canadian_MSSNG_parent_SVs.Manta.counts_SV", "Canadian_MSSNG_parent_SVs.LUMPY.counts", "Canadian_MSSNG_parent_SVs.LUMPY.counts_SV"] + \
+    [ "DGV_GAIN_IDs", "DGV_GAIN_n_samples_with_SV", "DGV_GAIN_n_samples_tested", "DGV_GAIN_Frequency", ] + \
+    [ "DGV_LOSS_IDs", "DGV_LOSS_n_samples_with_SV", "DGV_LOSS_n_samples_tested", "DGV_LOSS_Frequency", ] + \
+    [ "gnomAD_AF", "gnomAD_SV", "gnomAD_AN", "gnomAD_AC", "gnomAD_N_HOMREF", "gnomAD_N_HET", "gnomAD_N_HOMALT", "gnomAD_FREQ_HOMREF", "gnomAD_FREQ_HET", "gnomAD_FREQ_HOMALT", "gnomAD_POPMAX_AF" ] + \
+    [ "DDD_mode", "DDD_pmids", ] + \
+    [ "Genes in HGMD", "HGMD disease", "HGMD tag", "HGMD descr", "HGMD JOURNAL_DETAILS" ] + \
+    [ "ExAC syn_z", "ExAC mis_z", "ExAC lof_z", "ExAC pLI" ] + \
+    [ col for col in SVScore_cols if col != 'variants/SVLEN'] + \
+    [ "DECIPHER_LINK" ] ]
     sv_records.df.columns = sv_records.df.columns.str.replace('variants/','')
+
+    # [ "DDD_SV", "DDD_DUP_n_samples_with_SV", "DDD_DUP_Frequency", "DDD_DEL_n_samples_with_SV", "DDD_DEL_Frequency" ]
 
     print('Writing results to file ...')
     sv_records.write(outfile_name)

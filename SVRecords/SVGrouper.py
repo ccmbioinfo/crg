@@ -142,7 +142,7 @@ class SVGrouper:
             row['N_SAMPLES'] += 1
             row[samp_name] = 1
 
-        row["%s_SV_DETAILS" % samp_name].append('{}:{}-{}:{}:{}'.format(samp_chr, samp_start, samp_end, samp_svtype, samp_gt))
+        row["%s_SV_DETAILS" % samp_name].append('{}:{}-{}:{}'.format(samp_chr, samp_start, samp_end, samp_svtype))
         row["%s_GENOTYPE" % samp_name].append(samp_gt)
     
     def write(self, outfile_name):

@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#PBS -l walltime=5:00:00,nodes=1:ppn=1
+#PBS -l walltime=0:10:00,nodes=1:ppn=1
 #PBS -joe .
 #PBS -d .
-#PBS -l vmem=20g,mem=20g
+#PBS -l vmem=10g,mem=10g
 
 if [ -z $1 ]; then
 	echo "Specify family ID as first arguement to script"
