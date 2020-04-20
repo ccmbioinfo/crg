@@ -45,6 +45,8 @@ fi
 echo "${PY} ${HOME}/crg/crg.intersect_sv_vcfs.py -protein_coding_genes=${PROTEIN_CODING_GENES} -exon_bed=${EXON_BED} -hgmd=${HGMD} -hpo=${HPO} -exac=${EXAC} -omim=${OMIM} -biomart=${BIOMART} -gnomad=${GNOMAD} -sv_counts ${MSSNG_MANTA_COUNTS} ${MSSNG_LUMPY_COUNTS} -o=${OUT} -i ${IN_FILES}"
 ${PY} ${HOME}/crg/crg.intersect_sv_vcfs.py -protein_coding_genes=${PROTEIN_CODING_GENES} -exon_bed=${EXON_BED} -hgmd=${HGMD} -hpo=${HPO} -exac=${EXAC} -omim=${OMIM} -biomart=${BIOMART} -gnomad=${GNOMAD} -sv_counts ${MSSNG_MANTA_COUNTS} ${MSSNG_LUMPY_COUNTS} -o=${OUT} -i ${IN_FILES}
 
+${HOME}/crg/cap_report.py ${OUT}
+
 if [[ "$OSTYPE" == *"darwin"* ]]; then
 	open -a 'Microsoft Excel' ${OUT}
 fi

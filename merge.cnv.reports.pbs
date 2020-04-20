@@ -7,8 +7,12 @@
 
 module load python/3.7.1
 
-if [-z "$project"]; then
-	$project="PROJECT";
+PROJECT=$1
+OUT="${PROJECT}.cnv.tsv"
+
+if [[ -z "$PROJECT" ]]; then
+	PROJECT="PROJECT";
 fi
 
-python3 ~/crg/merge.cnv.reports.py -i $(ls *.tsv | tr '\n' ' ') -o ${project}.cnv.tsv
+python3 ~/crg/merge.cnv.reports.py -i $(ls *.tsv | tr '\n' ' ') -o ${OUT}
+python3 ~/crg/cap_report.py ${OUT}
