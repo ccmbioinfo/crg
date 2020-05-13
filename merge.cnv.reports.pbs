@@ -8,7 +8,8 @@
 module load python/3.7.1
 
 PROJECT=$1
-OUT="${PROJECT}.cnv.tsv"
+TODAY=`date +%Y-%m-%d`
+OUT="${PROJECT}.${TODAY}.cnv.tsv"
 
 if [[ -z "$PROJECT" ]]; then
 	PROJECT="PROJECT";
