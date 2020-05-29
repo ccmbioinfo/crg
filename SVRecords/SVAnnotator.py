@@ -327,7 +327,7 @@ class SVAnnotator:
         if prefix:
             ann_df.columns = ann_df.columns.str.replace('COUNT', prefix)
 
-        return sv_record.df.join(ann_df)
+        return pd.merge(sv_record.df, ann_df, left_index=True, right_index=True, how='left').fillna(0)
 
     def annotsv(self, sample_df):
         '''
