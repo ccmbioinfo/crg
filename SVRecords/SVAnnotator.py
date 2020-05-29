@@ -305,7 +305,7 @@ class SVAnnotator:
 
         return sv_record.df.join(ann_df)
 
-    def annotate_counts(self, counts, sv_record, prefix="", reciprocal_overlap=0.5):
+    def annotate_counts(self, counts, sv_record, prefix="COUNT", reciprocal_overlap=0.5):
         print('Annotating structural variants with those seen in %s based on a %f reciprocal overlap ...' % (counts, reciprocal_overlap))
 
         cols = ['COUNT_CHROM', 'COUNT_START', 'COUNT_END', 'COUNT_SVTYPE', 'COUNT']
@@ -324,10 +324,12 @@ class SVAnnotator:
         ann_df['COUNT_SV'] = ann_df[['COUNT_CHROM', 'COUNT_START', 'COUNT_END']].apply(lambda x: '{}:{}-{}'.format(x[0],x[1],x[2]), axis=1)
         ann_df = ann_df.drop(columns=['COUNT_CHROM', 'COUNT_START', 'COUNT_END', 'COUNT_SVTYPE'])
 
-        if prefix:
-            ann_df.columns = ann_df.columns.str.replace('COUNT', prefix)
+        ann_df.columns = ann_df.columns.str.replace('COUNT', prefix)
 
-        return pd.merge(sv_record.df, ann_df, left_index=True, right_index=True, how='left').fillna(0)
+        df = sv_record.df.join(ann_df)
+        df[[prefix]] = df[[prefix]].fillna(0)
+
+        return df
 
     def annotsv(self, sample_df):
         '''
