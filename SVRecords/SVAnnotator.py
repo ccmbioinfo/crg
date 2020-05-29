@@ -253,10 +253,10 @@ class SVAnnotator:
         omim_df.columns = omim_df.columns.str.replace('#','')
         omim_df.columns = omim_df.columns.str.strip()
 
-        omim_df = omim_df[['Mim Number', 'Ensembl Gene ID', 'Phenotypes']]
+        omim_df = omim_df[['MIM Number', 'Ensembl Gene ID', 'Phenotypes']]
         omim_df = omim_df[pd.notnull(omim_df['Phenotypes'])] #drop all nan phenotype columns
         omim_df['Inheritance'] = omim_df['Phenotypes'].apply(lambda col: process_OMIM_phenotype(col))
-        omim_df = omim_df.astype(str).groupby('Ensembl Gene ID', as_index=False).agg({'Phenotypes' : ' & '.join, 'Mim Number' : ' & '.join, 'Inheritance' : ' & '.join,})
+        omim_df = omim_df.astype(str).groupby('Ensembl Gene ID', as_index=False).agg({'Phenotypes' : ' & '.join, 'MIM Number' : ' & '.join, 'Inheritance' : ' & '.join,})
         self.append_prefix_to_columns(omim_df, "OMIM")
 
         omim_df = self.left_join(omim_df, self.gene_ref_df[["BioMart Ensembl Gene ID", 'BioMart Associated Gene Name']], 'OMIM Ensembl Gene ID', "BioMart Ensembl Gene ID")
