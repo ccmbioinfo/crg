@@ -64,8 +64,6 @@ class CNVGrouper:
 
         for l in bedtool.intersect(bedtool, wa=True, wb=True, F=reciprocal_overlap, f=reciprocal_overlap):
 
-            print(l)
-	
             ref_chr, ref_start, ref_end, ref_svtype, ref_name, \
             samp_chr, samp_start, samp_end, samp_svtype, samp_name = l
 
@@ -117,7 +115,8 @@ if __name__ == "__main__":
     "cnvn_count", "cnvn_details", "chrAnn", "startAnn", "endAnn", "variantTypeAnn", "CNVsizeAnn", "ASDgenes", \
     "ISCA_region", "CNV_ISCA_percOverlap", "ISCA_CNV_percOverlap", "ISCA_CNV_percOverlap_max", \
     "ISCA_matchCNVmax_percOverlap", "exon_symbol_ISCA", "DGVpercFreq_subjects_coverageStudies_50percRecipOverlap", \
-    "fileID", "comment", "samples", ]
+    "fileID", "comment", "samples", "CNVnumberOfGeneSymbols", \
+    "gnomAD_commonSV", "gnomAD_rareSV", "gnomAD_oe_lof", "gnomAD_oe_lof_upper", "gnomAD_oe_mis", "gnomAD_oe_mis_upper", "gnomAD_pLI", "gnomAD_pRec", ]
 
     end_cols = ["SAMPLE|REFCN", "SAMPLE|CN", "IMPRECISE", "cnv_type_conflict", "cnv_type_confict_coverage",\
     "MPO_NervousSystem", "MPO_Growth", "MPO_Other", "HPO_NervousSystem", "HPO_Growth", "HPO_Other", ]
