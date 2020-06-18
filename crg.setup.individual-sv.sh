@@ -4,22 +4,26 @@
 #PBS -d .
 #PBS -l vmem=21g,mem=21g
 
-for f in *; do cd $f/${family_id}/input;
+for f in ${family_id}*; 
+do
+	echo $f
 	if [ -d $f ]
 	then 
-		ln -s ../../../../remove_decoys/$f.no_decoy_reads.bam $f.bam; 
+		cd $f/${family_id}/input;
+		ln -s ../../../../remove_decoys/${f}-ready.no_decoy_reads.bam $f.bam; 
 		cd ../../..;
 	else
-		echo "decoy file not found"
+		echo "Decoy file not found"
 	fi
 
 done
 
-for f in *; 
+for f in ${family_id}*; 
 do 
 	if [ -d $f ]
 	then
-		cd $f; 
+		cd $f;
+		pwd
 		~/crg/crg.prepare_bcbio_run.sh ${family_id} sv;
 		cd ..;
 	else
