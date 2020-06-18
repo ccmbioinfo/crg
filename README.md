@@ -8,91 +8,78 @@ export PATH=/path/bcbio/anaconda/bin:$PATH
 export PYTHONPATH=/path/bcbio/anaconda/lib/python2.7
 ```
 
-# 2. Create a bed file for prioritization of small and structural variants
-1. Good sources of gene panels are: [Panel App from Genomics England](https://panelapp.genomicsengland.co.uk/) and [Gene panel app from iobio.io](https://genepanel.iobio.io/).
-2. If gene list comes from Phenotips:\
-```Rscript ~/bioscripts/genes.R phenotips_hpo2gene_coordinates phenotips_hpo.tsv```. Stringr should be >=1.4.
-3. Or use [genes.R](https://github.com/naumenko-sa/bioscripts/blob/master/genes.R) in a custom case
-4. Some genes might be missing (they don't have ENS IDs in phenotips tsv file, they are reported by script, you can try ~/cre/data/missing_genes_grch37.bed or GeneCards/Ensembl resources to find them).
-5. Sort and merge with bedtools\
-```
-	bedtools sort -i unsorted.bed > sorted.bed
-	bedtools merge -i sorted.bed > project.bed
-```
-6. result is project.bed
-
-# 3. Align reads vs GRCh37 reference with decoy
-1. Create a project(=case=family) dir:\
-`mkdir -p project/input`
-2. Copy/symlink input file(s) to project/input: project_sample.bam, or project_sample_1.fq.gz and project_sample_2.fq.gz
-3. Create bcbio project:\
-`crg.prepare_bcbio_run.sh project align_decoy`
-4. Run bcbio project:\
-`qsub ~/cre/scripts/bcbio.pbs -v project=project`\
-5. For multiple projects create a list of projects in projects.txt and run:\
+# 2. Setup and Align to Decoy
+1. Run `~/crg/crg.setup.sh <project>` to set up the folders and directory structures for running CRG
+2. Softlink the fastq files for the family into the `<project>/bcbio-align/<project>/input` folder named by `<projectID>_<sampleID>_1.fq.gz` and `<projectID>_<sampleID>_2.fq.gz`
+3. From within the `<projectID>/bcbio-align` folder, run `~/crg/crg.prepare_bcbio_run.sh <project> align_decoy` to set up the bcbio project
+4. Submit bcbio `qsub ~/cre/scripts/bcbio.pbs -v project=project`
+5. (Optional) For multiple projects create a list of projects in projects.txt and run:\
 `qsub -t 1-N ~/cre/scripts/bcbio.array.pbs`\
 where N = number of projects.
 6. To speed up the process, run one project per sample.
 
-# 4. Remove decoy reads
-`qsub ~/cre/cre.bam.remove_decoy_reads.sh -v bam=$bam`.\
-Keep original bam with decoy reads to store all data.\
-Some SV callers (manta) are sensitive to reads mapped to decoy even with one mate.
-
-# 5. Call small variants
-1. Create a project dir:\
-`mkdir -p project/input`
-2. Symlink bam file(s) from step1 to project/input: project_sample.bam Small variant calling is not sensitive to the presense of decoy reads.
-3. Create bcbio project:\
-`crg.prepare_bcbio_run.sh project small_variants`
+# 3. Small Variant Calling
+1. Navigate to the `<project>/bcbio-small-variants/<project>/input` folder and symlink the bams from step 2.
+2. Navigate two folders up and prepare the bcbio project:\
+`~/crg/crg.prepare_bcbio_run.sh <project> small_variants`
 4. Run bcbio:\
-`qsub ~/cre/bcbio.pbs -v project=project`
-5. Clean up bcbio project:\
+`qsub ~/cre/bcbio.pbs -v project=<project>`
+1. Once complete, clean up:\
 `qsub ~/cre/cre.sh -v family=<project>,cleanup=1,make_report=0,type=wgs`
 
-# 6. Create excel reports for small variants.
-1. coding report:\
-`qsub ~/cre/cre.sh -v family=project`
-2. noncoding variants for gene panels:\
-	2.1 subset variants:\
-	`bedtools intersect --header -a project-ensemble.vcf.gz -b panel.bed > project.panel.vcf.gz`\
-	2.2 reannotate variants in panels and create gemini.db:\
-	`qsub ~/crg/crg.vcf2cre.sh -v original_vcf=project.panel.vcf.gz,project=project`\
-	**note crg.vcf2cre.sh**  not cre.vcf2cre.sh: annotations for WGS are different  
-	2.3 build report:\
-	`qsub ~/cre/cre.sh -v family=project,type=wgs`
-3. noncoding variants for gene panels with flank\
-	3.1 modify bed file, add 100k bp to each gene start and end:\
-	`crg.flank.sh panel.bed > panel.flank.100k.bed`\
-	3.2 proceed as for noncoding small variant report
+# 4. Small Variant Reports
+1. To generate the coding report, run: \
+`qsub ~/cre/cre.sh -v family=<project>`\
+Within the `bcbio-small-variants` folder.
+2. Create a bed file for prioritization of small and structural variants in the `genes` folder \
+   2.1. If gene the list comes from Phenotips:\
+```Rscript ~/bioscripts/genes.R phenotips_hpo2gene_coordinates phenotips_hpo.tsv```. Stringr should be >=1.4. Or use [genes.R](https://github.com/naumenko-sa/bioscripts/blob/master/genes.R) in a custom case. \
+   2.2. Some genes might be missing (they don't have ENS IDs in phenotips tsv file, they are reported by script, you can try ~/cre/data/missing_genes_grch37.bed or GeneCards/Ensembl resources to find them).\
+	2.3. Sort and merge with bedtools: \
+		`bedtools sort -i unsorted.bed > sorted.bed`\
+		`bedtools merge -i sorted.bed > project.bed`\
+	2.4. result is `<project>.bed` \
+	2.5 add 100k bp to each gene start and end:\
+	`~/crg/crg.flank.sh <project>.bed > <project>.flank.100k.bed`
+3. Nagivate to the `panel` folder and run: \
+`bedtools intersect --header -a <project>-ensemble.vcf.gz -b <project>.bed > <project>.panel.vcf.gz`. The `<project>-ensemble.vcf.gz` file should be from the `bcbio-small-variants` folder and the `<project>.bed` from the `genes` folder.
+4. Reannotate variants in panels and create gemini.db: \
+`qsub ~/crg/crg.vcf2cre.sh -v original_vcf=<project>.panel.vcf.gz,project=<project>`
+note crg.vcf2cre.sh not cre.vcf2cre.sh: annotations for WGS are different
+5. Create panel report from within the `panel` folder:
+`qsub ~/cre/cre.sh -v family=<project>,type=wgs`
+6. Perform steps 3-5 for the `<project>.flank.100k.bed` file and within the `panel-flank100k` folder
 
-# 7. Call structural variants (in parallel with step 3)
-1. MetaSV uses spades (a genome assembler) for every SV, making bcbio run computationally intensive. To speed up call samples individually.\
-sv_regions parameter in bcbio works only for wham.
-2. Create project dir:\
-`mkdir -p project/input`
-3. Symlink a bam file. from step 2 to project/input: project_sample.bam.
-4. Create bcbio project:\
-`crg.prepare_bcbio_run.sh project sv`\
-5. Run bcbio:\
-`qsub ~/cre/bcbio.pbs -v project=project`
+# 5. Call Structural Variants (In Parallel with Step 3.)
+1. Run the `~/crg/crg.call-svs.sh <project>` script to set up the pipeline for SV calling. It will submit jobs to remove decoys and run SV calling for samples individually. The script will print the commands to perfom the following steps *after* the bcbio jobs are completed, they are explained below.
+2. Run `metasv.pbs -v PROJECT=<project>,SAMPLE=<sample>` within each sample's `final` dir:
+```
+for f in <project>_*/<project>/final/<project>*; do cd $f; pwd; ls; qsub ~/crg/metasv.pbs -v PROJECT=<project>,SAMPLE="$(echo $f | sed -n -e 's/.*_//p')"; cd ../../../..; done")'
+```
+3. After MetaSV, is done, annotate the VCF files with snpEff (`qsub ~/crg/crg.snpeff.sh -F <project>-metasv.vcf.gz`) and then svScore (`qsub ~/crg/crg.svscore.sh -F <project>-snpeff.vcf.gz`): 
+```
+for f in <project>_*/<project>/final/<project>_*/*/*metasv*.gz; do qsub ~/crg/crg.snpeff.sh -F $f; ls; done
+```
+and 
+```
+for f in <project>_*/<project>/final/<project>*; do cd $f; pwd; ls; qsub ~/crg/metasv.pbs -v PROJECT=<project>,SAMPLE="$(echo $f | sed -n -e 's/.*_//p')"; cd ../../../..; done")
+```
 
 # 8. Excel report for structural variants 
 1. [Report columns](https://docs.google.com/document/d/1o870tr0rcshoae_VkG1ZOoWNSAmorCZlhHDpZuZogYE/edit?usp=sharing)
-2. `cd project/sv`
-3. Generate per sample reports: \
+2. Create a directory, link the final annotated VCF files into it, and run the intersect sv script: `~/crg/crg.intersect_sv_vcfs.sh -F <project>`. To include HPO terms in the report, put the file from PhenomeCentral in the `~/gene_data/HPO` folder named by `<project>_HPO.txt`.
+3. (Optional) Generate per sample reports: \
 3.1 `cd <sample_dir>`\
 3.2 `qsub ~/crg/crg.sv.prioritize.sh -v case=<project>,panel=<panel.bed>`\
 Also outputs sample.tsv file for annotation in TCAG with DGV frequencies.\
-3.3 (Optional) `crg.sv.prioritize.sh <project> panel.bed tcag_annotated_file.tsv` to incorporate DGV frequencies.
-4. Combine reports from multiple samples:\
-4.1 Gather each report from the previous step in to a single directory.\
-4.3 `crg.intersect_sv_reports.sh project`.
+3.3 `crg.sv.prioritize.sh <project> panel.bed tcag_annotated_file.tsv` to incorporate DGV frequencies.
 
 ## AnnotSV
-[AnnotSV](http://lbgi.fr/AnnotSV/) must be set up as apart of the local environment to generate family level reports. Users should set FeaturesOverlap and SVtoAnnOverlap to 50 in the configFile. Because these scripts group SV's which have a 50% recipricol overlap, annotation should follow a similar rule.
+[AnnotSV](http://lbgi.fr/AnnotSV/) must be set up as a part of the local environment to generate family level reports. Users should set FeaturesOverlap and SVtoAnnOverlap to 50 in the configFile. Because these scripts group SV's which have a 50% recipricol overlap, annotation should follow a similar rule.
 
-# Report columns:
+DGV and DDD columns are annotated by [AnnotSV](http://lbgi.fr/AnnotSV/).
+
+# Individual report columns:
 - CHR
 - POS
 - GT
@@ -124,11 +111,6 @@ The script produces a CSV file which can be analyzed using spreadsheet software.
 	HPO=${HOME}/gene_data/HPO_2018/${FAMILY_ID}_HPO.txt
 	EXAC=${HOME}/gene_data/ExAC/fordist_cleaned_nonpsych_z_pli_rec_null_data.txt
 	OMIM=${HOME}/gene_data/OMIM_2018-11-01/genemap2.txt
-
-### AnnotSV
-[AnnotSV](http://lbgi.fr/AnnotSV/) must be set up as apart of the local environment to generate a family report. Users should set FeaturesOverlap and SVtoAnnOverlap to 50 in the configFile. Because these scripts group SV's which have a 50% recipricol overlap, annotation should follow a similar rule.
-
-DGV and DDD columns are annotated by [AnnotSV](http://lbgi.fr/AnnotSV/).
 
 ## Family report columns:
 [In-depth column descriptions](https://docs.google.com/document/d/1o870tr0rcshoae_VkG1ZOoWNSAmorCZlhHDpZuZogYE/edit#)
