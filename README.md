@@ -11,17 +11,17 @@ export PYTHONPATH=/path/bcbio/anaconda/lib/python2.7
 # 2. Setup and Align to Decoy
 1. Run `~/crg/crg.setup.sh <project>` to set up the folders and directory structures for running CRG
 2. Softlink the fastq files for the family into the `<project>/bcbio-align/<project>/input` folder named by `<projectID>_<sampleID>_1.fq.gz` and `<projectID>_<sampleID>_2.fq.gz`
-3. From within the `<projectID>/bcbio-align` folder, run `crg.prepare_bcbio_run.sh <project> align_decoy` to set up the bcbio project
+3. From within the `<projectID>/bcbio-align` folder, run `~/crg/crg.prepare_bcbio_run.sh <project> align_decoy` to set up the bcbio project
 4. Submit bcbio `qsub ~/cre/scripts/bcbio.pbs -v project=project`
-5. For multiple projects create a list of projects in projects.txt and run:\
+5. (Optional) For multiple projects create a list of projects in projects.txt and run:\
 `qsub -t 1-N ~/cre/scripts/bcbio.array.pbs`\
 where N = number of projects.
 6. To speed up the process, run one project per sample.
 
 # 3. Small Variant Calling
-1. Navigate to the `<project>/bcbio-small-variants/<project>/input` folder and symlink the bams from step 3.
+1. Navigate to the `<project>/bcbio-small-variants/<project>/input` folder and symlink the bams from step 2.
 2. Navigate two folders up and prepare the bcbio project:\
-`crg.prepare_bcbio_run.sh <project> small_variants`
+`~/crg/crg.prepare_bcbio_run.sh <project> small_variants`
 4. Run bcbio:\
 `qsub ~/cre/bcbio.pbs -v project=<project>`
 1. Once complete, clean up:\
@@ -31,7 +31,7 @@ where N = number of projects.
 1. To generate the coding report, run: \
 `qsub ~/cre/cre.sh -v family=<project>`\
 Within the `bcbio-small-variants` folder.
-2. Create a bed file for prioritization of small and structural variants in the `genes` folder
+2. Create a bed file for prioritization of small and structural variants in the `genes` folder \
    2.1. If gene the list comes from Phenotips:\
 ```Rscript ~/bioscripts/genes.R phenotips_hpo2gene_coordinates phenotips_hpo.tsv```. Stringr should be >=1.4. Or use [genes.R](https://github.com/naumenko-sa/bioscripts/blob/master/genes.R) in a custom case. \
    2.2. Some genes might be missing (they don't have ENS IDs in phenotips tsv file, they are reported by script, you can try ~/cre/data/missing_genes_grch37.bed or GeneCards/Ensembl resources to find them).\
@@ -51,12 +51,12 @@ note crg.vcf2cre.sh not cre.vcf2cre.sh: annotations for WGS are different
 6. Perform steps 3-5 for the `<project>.flank.100k.bed` file and within the `panel-flank100k` folder
 
 # 5. Call Structural Variants (In Parallel with Step 3.)
-1. Run the `~/crg/crg.call-svs.sh <project>` script to set up the pipeline for sv calling. It will submit jobs to remove decoys and run SV calling individually. The script will print the commands to perfom the following steps *after* the bcbio jobs are completed, explained below
+1. Run the `~/crg/crg.call-svs.sh <project>` script to set up the pipeline for SV calling. It will submit jobs to remove decoys and run SV calling for samples individually. The script will print the commands to perfom the following steps *after* the bcbio jobs are completed, they are explained below.
 2. Run `metasv.pbs -v PROJECT=<project>,SAMPLE=<sample>` within each sample's `final` dir:
 ```
 for f in <project>_*/<project>/final/<project>*; do cd $f; pwd; ls; qsub ~/crg/metasv.pbs -v PROJECT=<project>,SAMPLE="$(echo $f | sed -n -e 's/.*_//p')"; cd ../../../..; done")'
 ```
-3. After MetaSV, is done, annotate the VCF files with snpEff (`qsub ~/crg/crg.snpeff.sh -F <project>-metasv.vcf.gz`) and theb svScore (`qsub ~/crg/crg.svscore.sh -F <project>-snpeff.vcf.gz`): \
+3. After MetaSV, is done, annotate the VCF files with snpEff (`qsub ~/crg/crg.snpeff.sh -F <project>-metasv.vcf.gz`) and then svScore (`qsub ~/crg/crg.svscore.sh -F <project>-snpeff.vcf.gz`): 
 ```
 for f in <project>_*/<project>/final/<project>_*/*/*metasv*.gz; do qsub ~/crg/crg.snpeff.sh -F $f; ls; done
 ```
@@ -79,7 +79,7 @@ Also outputs sample.tsv file for annotation in TCAG with DGV frequencies.\
 
 DGV and DDD columns are annotated by [AnnotSV](http://lbgi.fr/AnnotSV/).
 
-# Individual eport columns:
+# Individual report columns:
 - CHR
 - POS
 - GT
