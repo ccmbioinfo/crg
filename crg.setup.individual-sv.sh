@@ -10,7 +10,7 @@ do
 	if [ -d $f ]
 	then 
 		cd $f/${family_id}/input;
-		ln -s ../../../../remove_decoys/${f}-ready.no_decoy_reads.bam $f.bam; 
+		ln -s ../../../../remove_decoys/${f}.no_decoy_reads.bam $f.bam; 
 		cd ../../..;
 	else
 		echo "Decoy file not found"
