@@ -28,7 +28,7 @@ else
 		if [ -f ${bam_file} ];
 		then
 			ln -s ${bam_file} ${sample}.bam
-			decoy_jobs+=($(qsub ~/cre/cre.bam.remove_decoy_reads.sh -v bam=${sample}.bam))
+			decoy_jobs+=($(qsub ~/cre/cre.bam.remove_decoy_reads.sh -v bam=${sample}.bam)) 
 		else
 			echo "Aligned bam file not found for sample ${bam_file}"
 			exit
@@ -54,11 +54,13 @@ do
 	mkdir -p ${sample}/${family_id}/input
 	if [ -z ${decoy_string} ];
 	then
-		setup_bcbio=$(qsub ~/crg/crg.setup.individual-sv.sh -v family_id="${family_id}")
+		#pass $family_id and $sample to crg.setup.individual-sv.sh
+		setup_bcbio=$(qsub ~/crg/crg.setup.individual-sv.sh -v family_id="${family_id}",sample="${sample}") 
 	else
-		setup_bcbio=$(qsub ~/crg/crg.setup.individual-sv.sh -v family_id="${family_id}" -W depend=afterany:"${decoy_string}")
+		setup_bcbio=$(qsub ~/crg/crg.setup.individual-sv.sh -v family_id="${family_id}",sample="${sample}" -W depend=afterany:"${decoy_string}")
 	fi
 	# submit bcbio job to run after setup complete
+
 	cd ${sample}
 	bcbio_jobs+=($(qsub ~/cre/bcbio.pbs -v project="${family_id}" -W depend=afterany:"${setup_bcbio}"))
 	cd ..
