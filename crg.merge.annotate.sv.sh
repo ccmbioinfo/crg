@@ -26,9 +26,12 @@ snpeff_string=$( IFS=$':'; echo "${snpeff_jobs[*]}" )
 for f in $FAMILY_*/$FAMILY/final/$FAMILY*
 do
 	SAMPLE="$(echo $f | cut -d'/' -f1)"
-	snpeff_jobs+=($(qsub ~/crg/crg.svscore.sh -F $f/$SAMPLE/*snpeff.vcf -W depend=afterany:"${snpeff_string}"))
+	svscore_jobs+=($(qsub ~/crg/crg.svscore.sh -F $f/$SAMPLE/*snpeff.vcf -W depend=afterany:"${snpeff_string}"))
 done
+svscore_string=$( IFS=$':'; echo "${svscore_jobs[*]}" )
 
 echo "Merging SVs with metaSV, annotating with snpeff, and scoring with svscore..."
 
+#ln -s $FAMILY_*/$FAMILY/final/$FAMILY*/$FAMILY*/*svscore.vcf .
+qsub ~/crg/crg.intersect_sv_vcfs.sh -F $FAMILY  -W depend=afterany:"${svscore_string}"
 
