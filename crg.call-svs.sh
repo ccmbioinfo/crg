@@ -68,16 +68,3 @@ done
 bcbio_string=$( IFS=$':'; echo "${bcbio_jobs[*]}" )
 
 echo "Setup Complete."
-echo "Save the following commands, and once bcbio jobs: "$( IFS=$', '; echo "${bcbio_jobs[*]}" ) " are done, run them from within the bcbio-sv folder"
-echo "MetaSV:"
-echo '	for f in '${family_id}'_*/'${family_id}'/final/'${family_id}'*; do cd $f; pwd; ls; qsub ~/crg/metasv.pbs -v PROJECT=${family_id},SAMPLE="$(echo $f | sed -n -e 's/.*_//p')"; cd ../../../..; done")'
-echo "SnpEff:"
-echo '	for f in '${family_id}'_*/'${family_id}'/final/'${family_id}'_*/*/*metasv*.gz; do qsub ~/crg/crg.snpeff.sh -F $f; ls; done'
-echo "SVScore:"
-echo '	for f in '${family_id}'_*/'${family_id}'/final/'${family_id}'_*/*/*snpeff*.vcf; do qsub ~/crg/crg.svscore.sh -F $f; done'
-echo "Then create a directory to combine SVScore VCFs and link them:"
-echo '	mkdir combine_vcfs'
-echo '	cd combine_vcfs'
-echo '	for f in ../'${family_id}'_*/'${family_id}'/final/'${family_id}'_*/*/*svscore*.vcf;do ln -s $f . ; done'
-echo "Finally, run the intersect sv script:"
-echo '	~/crg/crg.intersect_sv_vcfs.sh -F '${family_id}
