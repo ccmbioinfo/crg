@@ -15,27 +15,13 @@ def intersect_variants(cnv, sv):
     cnv_bed = BedTool.from_dataframe(cnv_coord)
     sv_bed = BedTool.from_dataframe(sv_coord)
 
-    # prepare empty dataframe for overlaps
-    intersection = pd.DataFrame(columns=['CNV_CHROM', 'CNV_START', 'CNV_END', 'CNV_SVTYPE', 'SV_CHROM',
-                                         'SV_START', 'SV_END', 'SV_SVTYPE']).set_index(['CNV_CHROM', 'CNV_START', 'CNV_END', 'CNV_SVTYPE'])
-
     # intersect CNV and SV bed files with reciprocal overlap of 50%
-    for i in cnv_bed.intersect(sv_bed, wa=True, wb=True, F=0.5, f=0.5):
-        cnv_chrom, cnv_start, cnv_end, cnv_type, \
-            sv_chrom, sv_start, sv_end, sv_type = i
-        cnv_interval = (cnv_chrom, cnv_start, cnv_end, cnv_type)
-        sv_interval = (sv_chrom, sv_start, sv_end, sv_type)
-
-        # only compare like SV types
-        if cnv_type != sv_type:
-            pass
-        else:
-            intersection.loc[cnv_interval] = sv_interval
-
-    intersection = intersection.sort_index().reset_index()
-    # change start and end coordinates to integer data type
-    for col in ['CNV_START', 'CNV_END',  'SV_START', 'SV_END']:
-        intersection[col] = intersection[col].astype(int)
+    intersection = cnv_bed.intersect(sv_bed, wa=True, wb=True, F=0.5,
+                                     f=0.5).saveas('intersection.bed')
+    intersection = pd.read_csv('intersection.bed', sep='\t', names=['CNV_CHROM', 'CNV_START', 'CNV_END', 'CNV_SVTYPE', 'SV_CHROM',
+                                                                    'SV_START', 'SV_END', 'SV_SVTYPE'])
+    # remove overlapping SVs that are different SVTYPES
+    intersection = intersection[intersection['CNV_SVTYPE'] == intersection['SV_SVTYPE']]
 
     # make reports updated with overlap column
     merged_cnv = update_report(cnv, intersection, 'CNV')
@@ -47,14 +33,14 @@ def update_report(report_df, intersection, variant_type):
     # join overlap dataframe with report dataframe to annotate overlaps
     if variant_type == 'CNV':
         merged = report_df.merge(intersection, how='left', left_on=['CHROM', 'START', 'END', 'SVTYPE'], right_on=[
-                                 'CNV_CHROM', 'CNV_START', 'CNV_END', 'CNV_SVTYPE'])
+                                 'CNV_CHROM', 'CNV_START', 'CNV_END', 'CNV_SVTYPE'], validate='1:m')
         overlap = []
         overlap = ['{}:{}-{}'.format(row['SV_CHROM'], int(row['SV_START']), int(row['SV_END']))
                    if row['SV_START'] == row['SV_START'] else 'nan' for index, row in merged.iterrows()]
         merged['SV_overlap'] = overlap
     else:
         merged = report_df.merge(intersection, how='left', left_on=['CHROM', 'POS', 'END', 'SVTYPE'], right_on=[
-                                 'SV_CHROM', 'SV_START', 'SV_END', 'SV_SVTYPE'])
+                                 'SV_CHROM', 'SV_START', 'SV_END', 'SV_SVTYPE'], validate='1:m')
         overlap = []
         overlap = ['{}:{}-{}'.format(row['CNV_CHROM'], int(row['CNV_START']), int(row['CNV_END']))
                    if row['CNV_START'] == row['CNV_START'] else 'nan' for index, row in merged.iterrows()]
