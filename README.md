@@ -51,23 +51,11 @@ note crg.vcf2cre.sh not cre.vcf2cre.sh: annotations for WGS are different
 6. Perform steps 3-5 for the `<project>.flank.100k.bed` file and within the `panel-flank100k` folder
 
 # 5. Call Structural Variants (In Parallel with Step 3.)
-1. Run the `~/crg/crg.call-svs.sh <project>` script to set up the pipeline for SV calling. It will submit jobs to remove decoys and run SV calling for samples individually. The script will print the commands to perfom the following steps *after* the bcbio jobs are completed, they are explained below.
-2. Run `metasv.pbs -v PROJECT=<project>,SAMPLE=<sample>` within each sample's `final` dir:
-```
-for f in <project>_*/<project>/final/<project>*; do cd $f; pwd; ls; qsub ~/crg/metasv.pbs -v PROJECT=<project>,SAMPLE="$(echo $f | sed -n -e 's/.*_//p')"; cd ../../../..; done")'
-```
-3. After MetaSV, is done, annotate the VCF files with snpEff (`qsub ~/crg/crg.snpeff.sh -F <project>-metasv.vcf.gz`) and then svScore (`qsub ~/crg/crg.svscore.sh -F <project>-snpeff.vcf.gz`): 
-```
-for f in <project>_*/<project>/final/<project>_*/*/*metasv*.gz; do qsub ~/crg/crg.snpeff.sh -F $f; ls; done
-```
-and 
-```
-for f in <project>_*/<project>/final/<project>*; do cd $f; pwd; ls; qsub ~/crg/metasv.pbs -v PROJECT=<project>,SAMPLE="$(echo $f | sed -n -e 's/.*_//p')"; cd ../../../..; done")
-```
+1. Run the `~/crg/crg.call-svs.sh <project>` script to set up the pipeline for SV calling. It will submit jobs to remove decoys and run SV calling for samples individually.
 
-# 8. Excel report for structural variants 
+# 6. Excel report for structural variants 
 1. [Report columns](https://docs.google.com/document/d/1o870tr0rcshoae_VkG1ZOoWNSAmorCZlhHDpZuZogYE/edit?usp=sharing)
-2. Create a directory, link the final annotated VCF files into it, and run the intersect sv script: `~/crg/crg.intersect_sv_vcfs.sh -F <project>`. To include HPO terms in the report, put the file from PhenomeCentral in the `~/gene_data/HPO` folder named by `<project>_HPO.txt`.
+2. cd into the bcbio-sv directory and run the merging and annotation script: `~/crg/crg.merge.annotate.sv.sh <project>`. To include HPO terms in the report, put the file from PhenomeCentral in the `~/gene_data/HPO` folder named by `<project>_HPO.txt`.
 3. (Optional) Generate per sample reports: \
 3.1 `cd <sample_dir>`\
 3.2 `qsub ~/crg/crg.sv.prioritize.sh -v case=<project>,panel=<panel.bed>`\

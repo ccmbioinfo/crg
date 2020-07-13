@@ -3,8 +3,7 @@
 #PBS -l walltime=0:20:00,nodes=1:ppn=4
 #PBS -joe .
 #PBS -d .
-#PBS -l vmem=4g,mem=4g
+#PBS -l vmem=8g,mem=8g
 
-SAMPLE=$1
 
-python ~/crg/metasv.py -bam ${SAMPLE}.bam -manta $SAMPLE"-manta.vcf.gz" -lumpy $SAMPLE"-lumpy.vcf.gz" -wham $SAMPLE"-wham.vcf.gz" -sample $SAMPLE
+python ~/crg/metasv.py -bam ${SAMPLE}-ready.bam -manta $FAMILY"-manta.vcf.gz" -lumpy $FAMILY"-lumpy.vcf.gz" -wham $FAMILY"-wham.vcf.gz" -sample $SAMPLE

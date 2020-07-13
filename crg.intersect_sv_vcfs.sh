@@ -27,7 +27,8 @@ MSSNG_MANTA_COUNTS=${GENE_DATA}/mssng_counts/Canadian_MSSNG_parent_SVs.Manta.cou
 MSSNG_LUMPY_COUNTS=${GENE_DATA}/mssng_counts/Canadian_MSSNG_parent_SVs.LUMPY.counts.txt
 
 if [ ! $2 ]; then
-	IN_FILES=`ls *.vcf | tr '\n' ' '`
+	FAMILY=$1
+	IN_FILES=`ls ${FAMILY}_*/${FAMILY}/final/${FAMILY}*/${FAMILY}*/*svscore.vcf | tr '\n' ' '`
 else
 	IN_FILES=${*:2}
 fi
