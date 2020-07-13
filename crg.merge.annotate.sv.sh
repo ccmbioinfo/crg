@@ -30,8 +30,7 @@ do
 done
 svscore_string=$( IFS=$':'; echo "${svscore_jobs[*]}" )
 
-echo "Merging SVs with metaSV, annotating with snpeff, and scoring with svscore..."
+echo "Merging SVs with metaSV, annotating with snpeff, scoring with svscore, and creating report..."
 
-#ln -s $FAMILY_*/$FAMILY/final/$FAMILY*/$FAMILY*/*svscore.vcf .
 qsub ~/crg/crg.intersect_sv_vcfs.sh -F $FAMILY  -W depend=afterany:"${svscore_string}"
 
