@@ -24,14 +24,33 @@ def intersect_variants(cnv, sv):
     intersection = intersection[intersection['CNV_SVTYPE'] == intersection['SV_SVTYPE']]
 
     # make reports updated with overlap column
-    merged_cnv = update_report(cnv, intersection, 'CNV')
-    merged_sv = update_report(sv, intersection, 'SV')
-    return merged_cnv, merged_sv
+    merged_cnv = update_report(cnv, intersection, 'cnv')
+    merged_sv = update_report(sv, intersection, 'sv')
+
+    return collapse_overlaps(merged_cnv, 'cnv'), collapse_overlaps(merged_sv, 'sv')
+
+
+def collapse_overlaps(report_df, variant_type):
+    # if a variant (e.g. CNV) overlaps with muliple variants,
+    # (e.g. multiple SVs), collapse and create one record
+    # with a comma-separated list of overlapping variants
+    overlap_col = 'SV_overlap' if variant_type == 'cnv' else 'CNV_overlap'
+    start_col = 'START' if variant_type == 'cnv' else 'POS'
+    # concatenate overlapping SVs
+    merged_overlaps = report_df.groupby(['CHROM', start_col, 'END', 'SVTYPE'])[
+        overlap_col].apply(','.join).reset_index()
+    report_df = report_df.drop(overlap_col, axis=1)
+    # merge report variants with merged overlaps df to replace overlap
+    # annotations with list of overlaps, then drop duplicates
+    report_df = report_df.merge(merged_overlaps, how='left', on=[
+                                'CHROM', start_col, 'END', 'SVTYPE']).drop_duplicates()
+
+    return report_df
 
 
 def update_report(report_df, intersection, variant_type):
     # join overlap dataframe with report dataframe to annotate overlaps
-    if variant_type == 'CNV':
+    if variant_type == 'cnv':
         merged = report_df.merge(intersection, how='left', left_on=['CHROM', 'START', 'END', 'SVTYPE'], right_on=[
                                  'CNV_CHROM', 'CNV_START', 'CNV_END', 'CNV_SVTYPE'], validate='1:m')
         overlap = []
@@ -57,14 +76,14 @@ if __name__ == "__main__":
     parser.add_argument('-cnv', help='CNV report (tsv file)', required=True)
     args = parser.parse_args()
 
-sv_file = args.sv.strip('tsv')
-cnv_file = args.cnv.strip('tsv')
-sv = pd.read_csv(args.sv, sep='\t')
-cnv = pd.read_csv(args.cnv, sep='\t')
+    sv_file = args.sv.strip('tsv')
+    cnv_file = args.cnv.strip('tsv')
+    sv = pd.read_csv(args.sv, sep='\t')
+    cnv = pd.read_csv(args.cnv, sep='\t')
 
-# determine overlaps between CNVs and SVs
-overlaps = intersect_variants(cnv, sv)
+    # determine overlaps between CNVs and SVs
+    overlaps = intersect_variants(cnv, sv)
 
-# export reports with overlap annotation
-overlaps[0].to_csv('{}withSVoverlaps.tsv'.format(cnv_file), sep='\t', index=False, na_rep='nan')
-overlaps[1].to_csv('{}withCNVoverlaps.tsv'.format(sv_file), sep='\t', index=False, na_rep='nan')
+    # export reports with overlap annotation
+    overlaps[0].to_csv('{}withSVoverlaps.tsv'.format(cnv_file), sep='\t', index=False, na_rep='nan')
+    overlaps[1].to_csv('{}withCNVoverlaps.tsv'.format(sv_file), sep='\t', index=False, na_rep='nan')
