@@ -69,6 +69,15 @@ def update_report(report_df, intersection, variant_type):
     return merged
 
 
+def reorder_columns(report_df):
+    # Takes final annotated report and rearranges columns so overlap columns
+    # is to the right of the 'SVTYPE' columns
+    cols = report_df.columns.tolist()
+    cols = cols[0:4] + [cols[-1]] + cols[5:-1]
+    report_df = report_df[cols]
+    return(report_df)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Adds column to SV and CNV reports indicating if an SV is observed in the CNV report and vice versa')
@@ -84,6 +93,12 @@ if __name__ == "__main__":
     # determine overlaps between CNVs and SVs
     overlaps = intersect_variants(cnv, sv)
 
+    # reorder columns
+    cnv_w_overlap = reorder_columns(overlaps[0])
+    sv_w_overlap = reorder_columns(overlaps[1])
+
     # export reports with overlap annotation
-    overlaps[0].to_csv('{}withSVoverlaps.tsv'.format(cnv_file), sep='\t', index=False, na_rep='nan')
-    overlaps[1].to_csv('{}withCNVoverlaps.tsv'.format(sv_file), sep='\t', index=False, na_rep='nan')
+    cnv_w_overlap.to_csv('{}withSVoverlaps.tsv'.format(
+        cnv_file), sep='\t', index=False, na_rep='nan')
+    sv_w_overlap.to_csv('{}withCNVoverlaps.tsv'.format(
+        sv_file), sep='\t', index=False, na_rep='nan')
