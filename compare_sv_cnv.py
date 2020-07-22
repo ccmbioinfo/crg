@@ -55,14 +55,14 @@ def update_report(report_df, intersection, variant_type):
                                  'CNV_CHROM', 'CNV_START', 'CNV_END', 'CNV_SVTYPE'], validate='1:m')
         overlap = []
         overlap = ['{}:{}-{}'.format(row['SV_CHROM'], int(row['SV_START']), int(row['SV_END']))
-                   if row['SV_START'] == row['SV_START'] else 'nan' for index, row in merged.iterrows()]
+                   if row['SV_START'] == row['SV_START'] else '.' for index, row in merged.iterrows()]
         merged['SV_overlap'] = overlap
     else:
         merged = report_df.merge(intersection, how='left', left_on=['CHROM', 'POS', 'END', 'SVTYPE'], right_on=[
                                  'SV_CHROM', 'SV_START', 'SV_END', 'SV_SVTYPE'], validate='1:m')
         overlap = []
         overlap = ['{}:{}-{}'.format(row['CNV_CHROM'], int(row['CNV_START']), int(row['CNV_END']))
-                   if row['CNV_START'] == row['CNV_START'] else 'nan' for index, row in merged.iterrows()]
+                   if row['CNV_START'] == row['CNV_START'] else '.' for index, row in merged.iterrows()]
         merged['CNV_overlap'] = overlap
     merged = merged.drop(columns=['CNV_CHROM', 'CNV_START', 'CNV_END',
                                   'CNV_SVTYPE', 'SV_CHROM', 'SV_START', 'SV_END', 'SV_SVTYPE'])
@@ -73,7 +73,7 @@ def reorder_columns(report_df):
     # Takes final annotated report and rearranges columns so overlap columns
     # is to the right of the 'SVTYPE' columns
     cols = report_df.columns.tolist()
-    cols = cols[0:4] + [cols[-1]] + cols[5:-1]
+    cols = cols[0:4] + [cols[-1]] + cols[4:-1]
     report_df = report_df[cols]
     return(report_df)
 
