@@ -1,6 +1,8 @@
-import argparse
 import pandas as pd
+from os import mkdir
+from shutil import move
 from pathlib import Path
+from datetime import date
 from SVRecords import SVGrouper, SVAnnotator
 
 def make_exon_gene_set(protein_coding_genes):
@@ -67,22 +69,14 @@ def main(protein_coding_genes, exon_bed, hgmd_db, hpo, exac, omim, biomart, gnom
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description='Generates a structural variant report in CSV format for clincal research')
-    parser.add_argument('-i', type=str, nargs='+', help='VCF files containing structural variants, e.g. -i 180_230.vcf 180_231.vcf', required=True)
-    parser.add_argument('-protein_coding_genes', help='BED file containing protein coding gene regions with their ENSG id\'s', required=True)
-    parser.add_argument('-exon_bed', help='BED file containing fixed exon positions', required=True)
-    parser.add_argument('-hgmd', help='HGMD Pro database file', required=True, type=str)
-    parser.add_argument('-hpo', help='Tab delimited file containing gene names and HPO terms', type=str)
-    parser.add_argument('-exac', help='ExAC tab delimited file containing gene names and scores', type=str, required=True)
-    parser.add_argument('-omim', help='OMIM tab delimited file containing gene names and scores', type=str, required=True)
-    parser.add_argument('-biomart', help='TSV file from BiomaRt containing Ensemble gene ID, transcript ID, gene name, MIM gene id, HGNC id, EntrezGene ID', type=str, required=True)
-    parser.add_argument('-gnomad', help='BED file from Gnomad containing structural variant coordinates and frequencies across populations', type=str, required=True)
-    parser.add_argument('-sv_counts', nargs='+', help='List of BED files containing structural variants and their frequencies. Can be used to annotate with various populations and variant callers', required=False)
-    parser.add_argument('-overlap', help='Recipricol overlap to group a structural variant by', type=float, default=0.5)
-    parser.add_argument('-o', help='Output file name e.g. -o 180.sv.family.tsv', required=True, type=str)
-    args = parser.parse_args()
+    report_dir=snakemake.output[0]
 
-    if len(args.i) == 0:
-        ValueError('Please enter the path to some vcf\'s following the -i flag')
-    else:
-        main(args.protein_coding_genes, args.exon_bed, args.hgmd, args.hpo, args.exac, args.omim, args.biomart, args.gnomad, args.sv_counts, args.o, args.i)
+    out_report="{}.wgs.sv.v{}.{}.tsv".format(snakemake.params.project, snakemake.params.PIPELINE_VERSION, date.today().strftime("%Y-%m-%d"))
+
+    main(snakemake.params.protein_coding_genes, snakemake.params.exon_bed, snakemake.params.hgmd, snakemake.params.hpo, snakemake.params.exac, \
+         snakemake.params.omim, snakemake.params.biomart, snakemake.params.gnomad, \
+         [snakemake.params.mssng_manta_counts, snakemake.params.mssng_lumpy_counts], \
+         out_report, snakemake.input)
+
+    mkdir(report_dir)
+    move(out_report, report_dir)
