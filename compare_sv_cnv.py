@@ -2,80 +2,103 @@ import argparse
 import numpy as np
 import pandas as pd
 from pybedtools import BedTool
+import re
+
+
+def get_sample_names(sv_report):
+    colnames = sv_report.columns
+    samples = [col for col in colnames if 'SV_DETAILS' in col]
+    samples = [sample.split('_')[0] + '_' + sample.split('_')[1] for sample in samples]
+
+    return samples
+
+
+def get_sample_sv_detail_names(sample_id, variant_type):
+    if variant_type == 'sv':
+        sample_col = '{}_SV_DETAILS'.format(sample_id)
+        details = 'SV_DETAILS'
+    else:
+        sample_col = '{}_RGS_SV_DETAILS'.format(sample_id)
+        details = 'CNV_DETAILS'
+    return sample_col, details
+
+
+def variant_details_to_df(variants, sample_id, variant_type):
+    # takes <sample>_SV_DETAILS column and turns it into a dataframe
+    # that can be converted into a BedTool for intersection
+    sample_col, details = get_sample_sv_detail_names(sample_id, variant_type)
+    variants = variants[[sample_col]].copy().dropna()
+    # split columns
+    variants[['CHR', 'COORD', 'SVTYPE']] = variants[sample_col].str.split(':', expand=True)
+    variants[['START', 'END']] = variants['COORD'].str.split('-', expand=True)
+    variants = variants.drop('COORD', axis=1)
+    variants = variants[['CHR', 'START', 'END', 'SVTYPE', sample_col]]
+    return variants
 
 
 def intersect_variants(cnv, sv):
-    # get coordinates of DEL and DUP from SV and CNV reports
-    sv_coord = sv[['CHROM', 'POS', 'END', 'SVTYPE']]
-    sv_coord = sv_coord[(sv_coord['SVTYPE'] != 'INV')
-                        & (sv_coord['SVTYPE'] != 'INS')]
-    cnv_coord = cnv[['CHROM', 'START', 'END', 'SVTYPE']]
+    # intersects CNVs and SVs and returns dataframes of intersections
 
     # convert report dataframes to bedtools
-    cnv_bed = BedTool.from_dataframe(cnv_coord)
-    sv_bed = BedTool.from_dataframe(sv_coord)
+    cnv_bed = BedTool.from_dataframe(cnv)
+    sv_bed = BedTool.from_dataframe(sv)
 
-    # intersect CNV and SV bed files with reciprocal overlap of 50%
-    intersection = cnv_bed.intersect(sv_bed, wa=True, wb=True, F=0.5,
-                                     f=0.5).saveas('intersection.bed')
-    intersection = pd.read_csv('intersection.bed', sep='\t', names=['CNV_CHROM', 'CNV_START', 'CNV_END', 'CNV_SVTYPE', 'SV_CHROM',
-                                                                    'SV_START', 'SV_END', 'SV_SVTYPE'])
-    # remove overlapping SVs that are different SVTYPES
-    intersection = intersection[intersection['CNV_SVTYPE'] == intersection['SV_SVTYPE']]
+    # intersect SVs and CNVs with 50% reciprocal overlap
+    bed_cols = ['CNV_CHROM', 'CNV_START', 'CNV_END', 'CNV_SVTYPE', 'CNV_DETAILS',
+                'SV_CHROM', 'SV_START', 'SV_END', 'SV_SVTYPE', 'SV_DETAILS']
+    intersection_rec50 = cnv_bed.intersect(sv_bed, wa=True, wb=True, F=0.5,
+                                           f=0.5).saveas('intersection_rec50.bed')
+    intersection_rec50 = pd.read_csv('intersection_rec50.bed', sep='\t', names=bed_cols)
+    # make sure CNV and SV are same variant type
+    intersection_rec50 = intersection_rec50[intersection_rec50['CNV_SVTYPE']
+                                            == intersection_rec50['SV_SVTYPE']]
 
-    # make reports updated with overlap column
-    merged_cnv = update_report(cnv, intersection, 'cnv')
-    merged_sv = update_report(sv, intersection, 'sv')
-
-    return collapse_overlaps(merged_cnv, 'cnv'), collapse_overlaps(merged_sv, 'sv')
+    return intersection_rec50
 
 
-def collapse_overlaps(report_df, variant_type):
-    # if a variant (e.g. CNV) overlaps with muliple variants,
-    # (e.g. multiple SVs), collapse and create one record
-    # with a comma-separated list of overlapping variants
-    overlap_col = 'SV_overlap' if variant_type == 'cnv' else 'CNV_overlap'
-    start_col = 'START' if variant_type == 'cnv' else 'POS'
-    # concatenate overlapping SVs
-    merged_overlaps = report_df.groupby(['CHROM', start_col, 'END', 'SVTYPE'])[
-        overlap_col].apply(','.join).reset_index()
-    report_df = report_df.drop(overlap_col, axis=1)
-    # merge report variants with merged overlaps df to replace overlap
-    # annotations with list of overlaps, then drop duplicates
-    report_df = report_df.merge(merged_overlaps, how='left', on=[
-                                'CHROM', start_col, 'END', 'SVTYPE']).drop_duplicates()
-
-    return report_df
-
-
-def update_report(report_df, intersection, variant_type):
+def update_report(report_df, intersection, variant_type, sample_id):
     # join overlap dataframe with report dataframe to annotate overlaps
-    if variant_type == 'cnv':
-        merged = report_df.merge(intersection, how='left', left_on=['CHROM', 'START', 'END', 'SVTYPE'], right_on=[
-                                 'CNV_CHROM', 'CNV_START', 'CNV_END', 'CNV_SVTYPE'], validate='1:m')
-        overlap = []
-        overlap = ['{}:{}-{}'.format(row['SV_CHROM'], int(row['SV_START']), int(row['SV_END']))
-                   if row['SV_START'] == row['SV_START'] else '.' for index, row in merged.iterrows()]
-        merged['SV_overlap'] = overlap
-    else:
-        merged = report_df.merge(intersection, how='left', left_on=['CHROM', 'POS', 'END', 'SVTYPE'], right_on=[
-                                 'SV_CHROM', 'SV_START', 'SV_END', 'SV_SVTYPE'], validate='1:m')
-        overlap = []
-        overlap = ['{}:{}-{}'.format(row['CNV_CHROM'], int(row['CNV_START']), int(row['CNV_END']))
-                   if row['CNV_START'] == row['CNV_START'] else '.' for index, row in merged.iterrows()]
-        merged['CNV_overlap'] = overlap
-    merged = merged.drop(columns=['CNV_CHROM', 'CNV_START', 'CNV_END',
-                                  'CNV_SVTYPE', 'SV_CHROM', 'SV_START', 'SV_END', 'SV_SVTYPE'])
+
+    sample_col, details = get_sample_sv_detail_names(sample_id, variant_type)
+    merged = report_df.merge(intersection, how='left', left_on=sample_col, right_on=details)
+    start_col = 'START' if variant_type == 'cnv' else 'POS'
+    merged = merged.drop_duplicates(subset=['CHROM', start_col, 'END', 'SVTYPE'])
+
     return merged
 
 
-def reorder_columns(report_df):
-    # Takes final annotated report and rearranges columns so overlap columns
-    # is to the right of the 'SVTYPE' columns
-    cols = report_df.columns.tolist()
-    cols = cols[0:4] + [cols[-1]] + cols[4:-1]
-    report_df = report_df[cols]
-    return(report_df)
+def add_tag(variant_details, overlap_details, variant_type):
+    # if overlap between CNV and SV exists, add tag to sample _SV_DETAILS
+    # CNV50/SV50 if 50% reciprocal overlap, CNVany/SVany if any intersections
+
+    # if neither field is empty, add tag
+
+    variant_overlap = 'CNV' if variant_type == 'sv' else 'SV'
+
+    if (variant_details == variant_details) and (overlap_details == overlap_details):
+        variant_details = variant_details + ":{}_50".format(variant_overlap)
+    else:
+        pass
+    return variant_details
+
+
+def apply_add_tag(updated_report_df, variant_type, sample_id):
+    # adds tags to report dataframe
+    sample_col, details = get_sample_sv_detail_names(sample_id, variant_type)
+    updated_report_df[sample_col] = updated_report_df.apply(
+        lambda row: add_tag(
+            variant_details=row[sample_col],
+            overlap_details=row[details],
+            variant_type=variant_type), axis=1)
+    return(updated_report_df)
+
+
+def trim_columns(tagged_report_df):
+    # removes columns from report df that were added as a result of the merge
+    # between the report and the bed file of CNV-SV intersections
+    tagged_report_df = tagged_report_df.drop(columns=['CNV_CHROM', 'CNV_START', 'CNV_END', 'CNV_SVTYPE', 'CNV_DETAILS',
+                                                      'SV_CHROM', 'SV_START', 'SV_END', 'SV_SVTYPE', 'SV_DETAILS'])
+    return tagged_report_df
 
 
 if __name__ == "__main__":
@@ -85,20 +108,35 @@ if __name__ == "__main__":
     parser.add_argument('-cnv', help='CNV report (tsv file)', required=True)
     args = parser.parse_args()
 
+    # get file names
     sv_file = args.sv.strip('tsv')
     cnv_file = args.cnv.strip('tsv')
+
+    # read reports into dataframes
     sv = pd.read_csv(args.sv, sep='\t')
     cnv = pd.read_csv(args.cnv, sep='\t')
 
-    # determine overlaps between CNVs and SVs
-    overlaps = intersect_variants(cnv, sv)
+    # get sample names
+    sample_names = get_sample_names(sv)
 
-    # reorder columns
-    cnv_w_overlap = reorder_columns(overlaps[0])
-    sv_w_overlap = reorder_columns(overlaps[1])
+    for sample in sample_names:
+        # convert sample SV_DETAILS into dataframe
+        cnvs = variant_details_to_df(cnv, sample, 'cnv')
+        svs = variant_details_to_df(sv, sample, 'sv')
 
-    # export reports with overlap annotation
-    cnv_w_overlap.to_csv('{}withSVoverlaps.tsv'.format(
-        cnv_file), sep='\t', index=False, na_rep='nan')
-    sv_w_overlap.to_csv('{}withCNVoverlaps.tsv'.format(
-        sv_file), sep='\t', index=False, na_rep='nan')
+        # get intersection between SVs and CNVs
+        intersection = intersect_variants(cnvs, svs)
+        intersection.to_csv('{}_intersection.tsv'.format(sample), sep='\t')
+
+        # tag sample SV_DETAILS if overlap is present
+        cnv = update_report(cnv, intersection, 'cnv', sample)
+        cnv = apply_add_tag(cnv, 'cnv', sample)
+        cnv = trim_columns(cnv)
+
+        sv = update_report(sv, intersection, 'sv', sample)
+        sv = apply_add_tag(sv, 'sv', sample)
+        sv = trim_columns(sv)
+
+    cnv.to_csv('{}withSVoverlaps.tsv'.format(cnv_file), index=False, na_rep='nan', sep='\t')
+    sv = sv.drop('HGMD tag', axis=1)
+    sv.to_csv('{}withCNVoverlaps.tsv'.format(sv_file), index=False, na_rep='nan', sep='\t')
