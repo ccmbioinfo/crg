@@ -340,10 +340,25 @@ class SVAnnotator:
         sample_df.reset_index()[['CHROM', 'POS', 'END', 'SVTYPE']].to_csv(all_sv_bed_name, index=False, sep='\t')
         subprocess.call("$ANNOTSV/bin/AnnotSV -SVinputFile {} -SVinputInfo 1 -outputFile {}".format(all_sv_bed_name, annotated), shell=True)
 
-        annotsv_df = pd.read_csv(annotated, sep='\t').astype(str)
-        annotsv_df = annotsv_df.loc[annotsv_df['AnnotSV type'] == 'full']
-        annotsv_df = annotsv_df.rename(columns={annotsv_df.columns[1]: 'CHROM', annotsv_df.columns[2]: 'POS', annotsv_df.columns[3]: 'END', annotsv_df.columns[5]:'SVTYPE'}).set_index(keys=['CHROM', 'POS', 'END', 'SVTYPE'])
-        annotsv_df = annotsv_df[ [col for col in annotsv_df.columns if "DDD" in col.upper() or "DGV" in col.upper()] ] # all dgv and ddd columns
+        annotsv_df_original = pd.read_csv(annotated, sep='\t').astype(str)
+        # DDD annotations are only given to SVs that are 'split'
+        # but we want the DGV annotations that are given to the 'full' SVs
+        # so, separate these and join them to get both
+        sv_cols = ['SV chrom', 'SV start', 'SV end', 'SV type']
+        DDD_cols = ['DDD_status', 'DDD_mode', 'DDD_consequence', 'DDD_disease', 'DDD_pmids']
+        annotsv_df_split = annotsv_df_original[annotsv_df_original['AnnotSV type'] == 'split'][sv_cols + DDD_cols].set_index(sv_cols)
+        annotsv_df_full = annotsv_df_original[annotsv_df_original['AnnotSV type'] == 'full'][sv_cols + [col for col in annotsv_df_original.columns.tolist() if 'DGV' in col.upper()]].set_index(sv_cols)
+        annotsv_df_all = annotsv_df_split.merge(annotsv_df_full, how='outer', on=sv_cols).reset_index().drop_duplicates(subset=sv_cols)
+        annotsv_df_cols = [col for col in annotsv_df_all.columns.tolist() if col not in DDD_cols]
+        annotsv_df_all = annotsv_df_all.fillna('nan')
+        # annotsv_df_split will have multiple rows per SV (one for each gene overlapped by the SV); aggregate to de-duplicate
+        annotsv_df = annotsv_df_all.groupby(annotsv_df_cols)[DDD_cols].agg({'DDD_status':  ','.join,
+                                                                            'DDD_mode':   ','.join,
+                                                                            'DDD_consequence':  ','.join,
+                                                                            'DDD_disease':  ','.join,
+                                                                            'DDD_pmids':  ','.join}).reset_index()
+
+        annotsv_df = annotsv_df.rename(columns={annotsv_df.columns[0]: 'CHROM', annotsv_df.columns[1]: 'POS', annotsv_df.columns[2]: 'END', annotsv_df.columns[3]:'SVTYPE'}).set_index(keys=['CHROM', 'POS', 'END', 'SVTYPE'])
         sample_df = sample_df.join(annotsv_df)
 
         os.remove(all_sv_bed_name)
