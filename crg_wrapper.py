@@ -95,7 +95,8 @@ def check_fastq(fastq, sampleid, input_path):
         arg2 = ['"{}"'.format(x2)]
         qsub_cmd1 = qsub + arg1
         qsub_cmd2 = qsub + arg2
-        log_message(qsub_cmd1, qsub_cmd2)
+        log_message("read1 fastq concat cmd: {}".format(qsub_cmd1))
+        log_message("read2 fastq concat cmd: {}".format(qsub_cmd2))
         cwd = os.getcwd()
         jobid1 = subprocess.check_output(qsub_cmd1).decode("UTF-8").rstrip()
         jobid2 = subprocess.check_output(qsub_cmd2).decode("UTF-8").rstrip()
@@ -108,7 +109,7 @@ def check_fastq(fastq, sampleid, input_path):
             cmd = "qsub {} -v cram={},sample={} -m ae".format(
                 cram2fq_script, cram, os.path.join(input_path, sampleid)
             )
-            log_message(cmd)
+            log_message("cram2fq cmd: {}".format(cmd))
             jobid = [check_output(cmd.split(" ")).decode("UTF-8").rstrip()]
             log_message("cram2fq jobid for {}: {}".format(sampleid, jobid))
 
@@ -258,7 +259,7 @@ def submit_sv(
     cwd = os.getcwd()
     proj_dir = os.path.join(base_path, familyid)
     os.chdir(proj_dir)
-    log_message("sv calling cmd:{}".format(cmd.split(" ")))
+    log_message("sv calling cmd:{}".format(cmd))
     jobid = subprocess.check_output(cmd.split(" ")).decode("UTF-8").rstrip()
     os.chdir(cwd)
     log_message("Job id for sv calling and report generation:{}\n".format(jobid))
@@ -312,7 +313,7 @@ def submit_smv(
     os.chdir(proj_dir)
     jobid = subprocess.check_output(cmd.split(" ")).decode("UTF-8").rstrip()
     os.chdir(cwd)
-    log_message("smv calling cmd: {}".format(cmd.split(" ")))
+    log_message("smv calling cmd: {}".format(cmd))
     log_message("Job id for smv calling and report generation:{}\n".format(jobid))
     return jobid
 
@@ -347,7 +348,7 @@ def submit_align(base_path, align_path, familyid, project, input_suffix):
             log_message("Job ids submitted for input prep: {}".format(jobid))
             cmd += ["-W depend=afterok:{}".format(jobid)]
         jobid = subprocess.check_output(cmd).decode("UTF-8").rstrip()
-        log_message("bcbio setup cmd: {}".format(cmd.split(" ")))
+        log_message("bcbio setup cmd: {}".format(" ".join(cmd)))
         log_message("Job id for bcbio setup: {}".format(jobid))
         bcbio_qsub = [
             "qsub",
@@ -358,7 +359,7 @@ def submit_align(base_path, align_path, familyid, project, input_suffix):
             "-W depend=afterok:{}".format(jobid),
         ]
         jobid = subprocess.check_output(bcbio_qsub).decode("UTF-8").rstrip()
-        log_message("bcbio align cmd: {}".format(bcbio_qsub.split(" ")))
+        log_message("bcbio align cmd: {}".format(" ".join(bcbio_qsub)))
         log_message("Job id for bcbio align: {}\n".format(jobid))
         os.chdir(cwd)
     return jobid
