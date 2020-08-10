@@ -4,6 +4,9 @@
 
 FAMILY=$1
 
+#run from bcbio-sv folder
+logfile = $FAMILY"_sv_jobids.log";
+
 #run metasv on each sample
 for f in $FAMILY_*/$FAMILY/final/$FAMILY* 
 do 
@@ -30,7 +33,13 @@ do
 done
 svscore_string=$( IFS=$':'; echo "${svscore_jobs[*]}" )
 
-echo "Merging SVs with metaSV, annotating with snpeff, scoring with svscore, and creating report..."
+echo "metasv=${metasv_string}" >> ${logfile}
+echo "snpeff=${snpeff_string}" >> ${logfile}
+echo "svscore=${svscore_string}" >> ${logfile}
+echo "Merging SVs with metaSV, annotating with snpeff, scoring with svscore, and creating report..." 
 
-qsub ~/crg/crg.intersect_sv_vcfs.sh -F $FAMILY  -W depend=afterany:"${svscore_string}"
+jobid=$(qsub ~/crg/crg.intersect_sv_vcfs.sh -F $FAMILY  -W depend=afterany:"${svscore_string}")
+
+echo "intersect=$jobid">> ${logfile}
+
 

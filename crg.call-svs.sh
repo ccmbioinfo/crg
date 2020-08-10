@@ -4,6 +4,8 @@
 # run from the top level folder for the project (i.e. within /<project>) 
 
 family_id=$1
+currdir=`pwd`;
+logfile="${currdir}/bcbio-sv/${family_id}_sv_jobids.log";
 
 if [ ! -d "bcbio-align" ]
 then
@@ -60,11 +62,15 @@ do
 		setup_bcbio=$(qsub ~/crg/crg.setup.individual-sv.sh -v family_id="${family_id}",sample="${sample}" -W depend=afterany:"${decoy_string}")
 	fi
 	# submit bcbio job to run after setup complete
-
 	cd ${sample}
 	bcbio_jobs+=($(qsub ~/cre/bcbio.pbs -v project="${family_id}" -W depend=afterany:"${setup_bcbio}"))
 	cd ..
 done
 bcbio_string=$( IFS=$':'; echo "${bcbio_jobs[*]}" )
-
+echo "SV calling job ids: "$( IFS=$', '; echo "${bcbio_string}" )
 echo "Setup Complete."
+
+#write jobids to log file
+echo "decoy=${decoy_string}" >> $logfile
+echo "sv_setup=${setup_bcbio}" >> $logfile
+echo "sv_bcbio=${bcbio_string}" >> $logfile

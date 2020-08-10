@@ -1,3 +1,4 @@
+#!/bin/bash
 # script to set up a bcbio run
 
 family=$1
