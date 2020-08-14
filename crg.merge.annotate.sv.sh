@@ -5,7 +5,11 @@
 FAMILY=$1
 
 #run from bcbio-sv folder
-logfile = $FAMILY"_sv_jobids.log";
+logfile=$FAMILY"_sv_jobids.log";
+
+if [ ! -f $logfile ]; then 
+	touch $logfile;
+fi;
 
 #run metasv on each sample
 for f in $FAMILY_*/$FAMILY/final/$FAMILY* 
