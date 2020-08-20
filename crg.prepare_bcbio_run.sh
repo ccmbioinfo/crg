@@ -43,9 +43,9 @@ done < samples.txt
 
 #default template
 template=~/crg/config/crg.bcbio.default.yaml
-if [ -n "$2" ]
+if [ -n "$analysis" ]
 then
-    template=~/crg/config/crg.bcbio.$2.yaml
+    template=~/crg/config/crg.bcbio.$analysis.yaml
 fi
 
 echo "Using config template: " $template
