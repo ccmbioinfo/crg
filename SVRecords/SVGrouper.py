@@ -146,7 +146,7 @@ class SVGrouper:
         row["%s_GENOTYPE" % samp_name].append(samp_gt)
     
     def write(self, outfile_name):
-        self.df.to_csv(outfile_name, sep='\t', encoding='utf-8')
+        self.df.to_csv(outfile_name, sep='\t', encoding='utf-8', na_rep='.')
 
     def make_ref_bedtool(self):
         return BedTool(list(self.df.index.values))

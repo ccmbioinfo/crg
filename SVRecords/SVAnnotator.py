@@ -100,6 +100,51 @@ class SVAnnotator:
 
         return sample_df.join(count_df).fillna(value={'EXONS_SPANNED': 0})
 
+    def calc_exon_boundaries(self, sample_df, exon_bed):
+        print('Calculating exon boundaries closest to structural variant breakpoints ...')
+
+        def find_min_distance(position, boundaries):
+            #range is boundary minus position of breakpoint plus one to account for 1-based coordinates
+            distance = {((boundary-position) + 1):boundary for boundary in boundaries['value'].tolist()}
+            min_distance = min(distance, key=abs)
+            min_boundary = distance[min_distance]
+            gene = boundaries[boundaries['value'] == min_boundary]['GENE'].values[0]
+            return min_distance, min_boundary, gene
+            
+        exons = pd.read_csv(exon_bed, sep='\t', names=['CHROM', 'POS', 'END', 'GENE'])
+        #make single column containing all exon boundaries
+        exons = pd.melt(exons, id_vars=['CHROM', 'GENE'], value_vars=['POS', 'END'])
+
+        boundary_distances = defaultdict()
+        boundary_distances['left'] = {'nearest_boundary':[],'nearest_distance':[]}
+        boundary_distances['right'] = {'nearest_boundary':[],'nearest_distance':[]}
+
+        for index,row in sample_df.iterrows():
+            chr, pos, end = str(row['CHROM']), int(row['POS']), int(row['END'])
+            boundaries = exons[exons['CHROM'] == chr]
+            for breakpoint in 'left', 'right':
+                position = pos if breakpoint == 'left' else end
+                min_distance, min_boundary, gene = find_min_distance(position, boundaries)
+                boundary_distances[breakpoint]['nearest_boundary'].append(gene + '|' + str(min_boundary))
+                boundary_distances[breakpoint]['nearest_distance'].append(min_distance)
+
+        sample_df['nearestLeftExonBoundary'], sample_df['nearestLeftExonDistance'] = boundary_distances['left']['nearest_boundary'], boundary_distances['left']['nearest_distance']
+        sample_df['nearestRightExonBoundary'],sample_df['nearestRightExonDistance'] = boundary_distances['right']['nearest_boundary'], boundary_distances['right']['nearest_distance']
+
+        return(sample_df.set_index(['CHROM', 'POS', 'END', 'SVTYPE']))
+
+
+    def find_min_distance(self, position, boundaries):
+        #range is boundary minus position of breakpoint plus one to account for 1-based coordinates
+        distance = {((boundary-position) + 1):boundary for boundary in boundaries['value'].tolist()}
+        min_distance = min(distance, key=abs)
+        min_boundary = distance[min_distance]
+        gene = boundaries[boundaries['value'] == min_boundary]['GENE'].values[0]
+        return min_distance, min_boundary, gene
+
+
+
+
     def annotate_hgmd(self, hgmd, sv_record):
         print('Annotating genes with published cases of pathogenic structural variants from HGMD')
 
@@ -350,7 +395,7 @@ class SVAnnotator:
         annotsv_df_full = annotsv_df_original[annotsv_df_original['AnnotSV type'] == 'full'][sv_cols + [col for col in annotsv_df_original.columns.tolist() if 'DGV' in col.upper()]].set_index(sv_cols)
         annotsv_df_all = annotsv_df_split.merge(annotsv_df_full, how='outer', on=sv_cols).reset_index().drop_duplicates(subset=sv_cols)
         annotsv_df_cols = [col for col in annotsv_df_all.columns.tolist() if col not in DDD_cols]
-        annotsv_df_all = annotsv_df_all.fillna('nan')
+        annotsv_df_all = annotsv_df_all.fillna('.')
         # annotsv_df_split will have multiple rows per SV (one for each gene overlapped by the SV); aggregate to de-duplicate
         annotsv_df = annotsv_df_all.groupby(annotsv_df_cols)[DDD_cols].agg({'DDD_status':  ','.join,
                                                                             'DDD_mode':   ','.join,
@@ -362,7 +407,7 @@ class SVAnnotator:
         sample_df = sample_df.join(annotsv_df)
 
         os.remove(all_sv_bed_name)
-        os.remove(annotated)
+        #os.remove(annotated)
 
         return sample_df
 
