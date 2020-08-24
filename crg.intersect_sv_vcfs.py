@@ -54,7 +54,7 @@ def main(protein_coding_genes, exon_bed, hgmd_db, hpo, exac, omim, biomart, gnom
     [ "DGV_GAIN_IDs", "DGV_GAIN_n_samples_with_SV", "DGV_GAIN_n_samples_tested", "DGV_GAIN_Frequency", ] + \
     [ "DGV_LOSS_IDs", "DGV_LOSS_n_samples_with_SV", "DGV_LOSS_n_samples_tested", "DGV_LOSS_Frequency", ] + \
     [ "gnomAD_AF", "gnomAD_SV", "gnomAD_AN", "gnomAD_AC", "gnomAD_N_HOMREF", "gnomAD_N_HET", "gnomAD_N_HOMALT", "gnomAD_FREQ_HOMREF", "gnomAD_FREQ_HET", "gnomAD_FREQ_HOMALT", "gnomAD_POPMAX_AF" ] + \
-    [ "DDD_mode", "DDD_pmids", ] + \
+    [ "DDD_disease", "DDD_mode", "DDD_pmids", ] + \
     [ "Genes in HGMD", "HGMD disease", "HGMD descr", "HGMD JOURNAL_DETAILS" ] + \
     [ "ExAC syn_z", "ExAC mis_z", "ExAC lof_z", "ExAC pLI" ] + \
     [ col for col in SVScore_cols if col != 'variants/SVLEN'] + \

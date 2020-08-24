@@ -88,6 +88,7 @@ def add_tag(variant_details, intersection, variant_type):
     variant_overlap = 'CNV' if variant_type == 'sv' else 'SV'
 
     if (variant_details == variant_details) and (intersection == intersection):
+        intersection = '50' if 'rec50' in intersection else 'any'
         variant_details = variant_details + ":{}_{}".format(variant_overlap, intersection)
     else:
         pass
