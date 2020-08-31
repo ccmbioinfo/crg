@@ -5,7 +5,8 @@
 FAMILY=$1
 
 #run from bcbio-sv folder
-logfile=$FAMILY"_sv_jobids.log";
+dir=`pwd`;
+logfile="${dir}/${FAMILY}_sv_jobids.log";
 
 if [ ! -f $logfile ]; then 
 	touch $logfile;
