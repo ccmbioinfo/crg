@@ -141,6 +141,14 @@ Includes all of the columns above, except SOURCES, NUM_SVTOOLS, SVTYPE and ANN, 
 - SAMPLE_details: what are the SV's in this sample which overlap with the reference?
 - SAMPLE_GENOTYPE
 
+# 7. CNV report
+TCAG produces CNV calls for each individual using CNVnator and ERDS. To create a family-level CNV report: \
+`qsub merge.cnv.reports.pbs  -F <project>` \
+
+# 8. SV and CNV overlaps
+It is helpful to know if an SV is supported by a CNV call and vice versa, as it provides additional support for that variant being real. To annotate overlaps, run: \
+`python compare_sv_cnv.py -sv <SV report> -cnv <CNV report>` \
+
 ## Result dir structure:
 project(family)_ID:
 - bcbio-align: config and final dirs from bcbio align-decoy run
