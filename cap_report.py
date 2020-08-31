@@ -13,5 +13,6 @@ except Exception as e:
 
 for col in df.columns:
 	df[col] = df[col].apply(lambda x: str(x)[:EXCEL_MAX-1])
+	df[col] = ['.' if val == 'nan' else val for val in df[col].tolist()]
 
-df.to_csv(REPORT, index=False, sep='\t')
+df.to_csv(REPORT, index=False, sep='\t', na_rep='.')
