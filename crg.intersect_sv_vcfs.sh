@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#PBS -l walltime=0:30:00,nodes=1:ppn=1
+#PBS -l walltime=2:00:00,nodes=1:ppn=1
 #PBS -joe .
 #PBS -d .
 #PBS -l vmem=10g,mem=10g
@@ -17,7 +17,7 @@ OUT=${FAMILY_ID}.wgs.sv.${TODAY}.tsv
 GENE_DATA=${HOME}/gene_data
 HGMD=${GENE_DATA}/HGMD_2018/hgmd_pro.db
 PROTEIN_CODING_GENES=${GENE_DATA}/grch37.p13.ensembl.sorted.protein.coding.genes.bed
-EXON_BED=${GENE_DATA}/protein_coding_genes.exons.fixed.sorted.bed
+EXON_BED=${GENE_DATA}/exons/hg19_UCSC_exons_canonical.bed
 HPO=${GENE_DATA}/HPO/${FAMILY_ID}_HPO.txt
 EXAC=${GENE_DATA}/ExAC/fordist_cleaned_nonpsych_z_pli_rec_null_data.txt
 OMIM=${GENE_DATA}/OMIM_2020-04-09/genemap2.txt
