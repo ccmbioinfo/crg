@@ -2,7 +2,7 @@
 # Python version >= 2.7
 from __future__ import print_function
 from collections import namedtuple
-import sys, os, subprocess, glob, argparse, logging
+import sys, os, subprocess, glob, argparse, logging, re
 
 # import pandas as pd
 
@@ -31,6 +31,8 @@ smv_script = os.path.expanduser("~/crg/crg_wrapper/submit_smv.sh")
 sv_script = os.path.expanduser("~/crg/crg_wrapper/submit_sv.sh")
 cat_fastq = os.path.expanduser("~/crg/crg_wrapper/cat_fastq.sh")
 cram2fq_script = os.path.expanduser("~/cre/cram2fq.sh")
+fq_regex = re.compile("_1|_R1")
+fq_regex_dict = {"_1":"_2", "_R1":"_R2"}
 
 
 def log_message(*message):
@@ -51,6 +53,16 @@ def create_symlink(src, dest):
         log_message("creating symlinks {} to {}".format(src, dest))
         subprocess.check_call(["ln", "-s", src, dest])
 
+def find_read_id(filename):
+    fastqname, dirname = os.path.basename(filename), os.path.dirname(filename)
+    rid = re.findall(fq_regex, fastqname)
+    if rid:
+        split_str = rid[0]
+    else:
+        log_message("Unhandled fastq read identifier. Read identifier should be \"_1|_R1\" or \"_2|_R2\". Exiting! ")
+        exit()
+    return fastqname, dirname, split_str
+
 
 def concatenate_fastq(fastq):  # multiple fastq files per end
 
@@ -59,8 +71,9 @@ def concatenate_fastq(fastq):  # multiple fastq files per end
     """
     r1, r2 = [], []
     for read1 in fastq:
-        prefix, suffix = read1.split("_R1")
-        read2 = prefix + "_R2" + suffix
+        fastqname, dirname, split_str = find_read_id(read1)
+        prefix, suffix = fastqname.split(split_str)
+        read2 = os.path.join(dirname, prefix + fq_regex_dict[split_str] + suffix)
         if os.path.isfile(read1) and os.path.isfile(read2):
             r1.append(read1)
             r2.append(read2)
@@ -116,9 +129,10 @@ def check_fastq(fastq, sampleid, input_path):
     elif ".fastq" in fastq or ".fq" in fastq:
         # fastq.split(".",1)[1] in ['fastq','fq','fastq.gz','fq.gz']: fails when path itself has "."
         log_message("Single FASTQ file per end for {} ".format(sampleid))
-        prefix, suffix = fastq.split("_R1")
+        fastqname, dirname, split_str = find_read_id(fastq)
+        prefix, suffix = fastqname.split(split_str)
         extension = suffix.split(".", 1)[1]  # fq, fastq, fq.gz, fastq.gz
-        r2 = prefix + "_R2" + suffix
+        r2 = os.path.join(dirname, prefix + fq_regex_dict[split_str] + suffix)
         if os.path.isfile(fastq) and os.path.isfile(r2):
             dest = os.path.join(input_path, sampleid + "_1" + ext_dict[extension])
             create_symlink(fastq, dest)
