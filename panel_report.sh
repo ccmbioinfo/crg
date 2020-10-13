@@ -38,7 +38,7 @@ fi;
 panel_report
 
 #panel flank
-~/crg/crg.flank.sh $bed > genes/${familyid}.flank.100k.bed
+~/crg/crg.flank.sh $bed > genes/${family}.flank.100k.bed
 dir="panel-flank100k";
-bed="genes/${familyid}.flank.100k.bed";
+bed="genes/${family}.flank.100k.bed";
 panel_report
