@@ -35,16 +35,15 @@ fi
 echo "sv bcbio jobids: ${jobarr["sv_bcbio"]}"
 
 #step2: merge, annotate and intersect: this requires project spec HPO file
+#if not found, print the message and still run 
 #run this from bcbio-sv
 cd bcbio-sv
 echo "Entering dir=`pwd`";
-if [ -f  "~/gene_data/HPO/${family_id}_HPO.txt" ]; then 
-	qsub ~/crg/crg.merge.annotate.sv.sh  -F "${family_id}" -W depend=afterok:${jobarr[sv_bcbio]}
-	echo "found"
-else
-	echo "${family_id}_HPO.txt file not found in ~/gene_data/HPO folder. ~/crg/crg.merge.annotate.sv.sh script won't be run";
+if [ ! -f  "~/gene_data/HPO/${family_id}_HPO.txt" ]; then 
+	echo "${family_id}_HPO.txt file not found in ~/gene_data/HPO folder, crg.merge.annotate.sv.sh will still be run";
+	#~/crg/crg.merge.annotate.sv.sh script won't be run";
 fi;
-
+qsub ~/crg/crg.merge.annotate.sv.sh  -F "${family_id}" -W depend=afterok:${jobarr[sv_bcbio]}
 
 #step3: prioritize 
 #this requires panel, panel100kflank from small-variants calling 
