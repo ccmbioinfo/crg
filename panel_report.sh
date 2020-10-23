@@ -13,14 +13,14 @@ fi;
 panel_vcf="${dir}/${family}/${family}-ensemble-annotated-decomposed.vcf.gz";
 echo "$panel_vcf, $ensemble, $bed";
 
-if [ ! -f "$panel_vcf" ]; then
+if [ ! -f "${panel_vcf}" ]; then
 	echo "generating ${panel_vcf}";
 	bedtools intersect -header -a $ensemble -b $bed > ${panel_vcf}
 fi;
 
 cd ${dir}
 echo "report generation for $dir"
-sh ~/crg/generate_reports.sh ${family} "wgs"
+sh ~/cre/generate_reports.sh ${family} "wgs"
 cd ..
 
 }
@@ -38,7 +38,10 @@ fi;
 panel_report
 
 #panel flank
-~/crg/crg.flank.sh $bed > genes/${family}.flank.100k.bed
+if [ ! -f "genes/${family}.flank.100k.bed" ]; then
+	~/crg/crg.flank.sh $bed > genes/${family}.flank.100k.bed
+fi;
+
 dir="panel-flank100k";
 bed="genes/${family}.flank.100k.bed";
 panel_report
