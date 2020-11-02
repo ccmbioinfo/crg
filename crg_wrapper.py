@@ -31,8 +31,10 @@ smv_script = os.path.expanduser("~/crg/crg_wrapper/submit_smv.sh")
 sv_script = os.path.expanduser("~/crg/crg_wrapper/submit_sv.sh")
 cat_fastq = os.path.expanduser("~/crg/crg_wrapper/cat_fastq.sh")
 cram2fq_script = os.path.expanduser("~/cre/cram2fq.sh")
-fq_regex = re.compile("_1|_R1")
-fq_regex_dict = {"_1":"_2", "_R1":"_R2"}
+fq_regex = re.compile(
+    "_R1"
+)  # _1") <- this splits the original part of the filename if there are numbers; so turning it off
+fq_regex_dict = {"_1": "_2", "_R1": "_R2"}
 
 
 def log_message(*message):
@@ -53,13 +55,16 @@ def create_symlink(src, dest):
         log_message("creating symlinks {} to {}".format(src, dest))
         subprocess.check_call(["ln", "-s", src, dest])
 
+
 def find_read_id(filename):
     fastqname, dirname = os.path.basename(filename), os.path.dirname(filename)
     rid = re.findall(fq_regex, fastqname)
     if rid:
         split_str = rid[0]
     else:
-        log_message("Unhandled fastq read identifier. Read identifier should be \"_1|_R1\" or \"_2|_R2\". Exiting! ")
+        log_message(
+            'Unhandled fastq read identifier. Read identifier should be "_1|_R1" or "_2|_R2". Exiting! '
+        )
         exit()
     return fastqname, dirname, split_str
 
@@ -383,8 +388,8 @@ def read_sample_info(filename):
 
     """
     reads three-cloumn tsv text file.
-    todo: 
-    - do validation check from args.file and 
+    todo:
+    - do validation check from args.file and
     - read using pandas
     """
 
@@ -424,11 +429,23 @@ def main(filename, input_suffix, step, base_path):
             # input_suffix = ""
             # sv: structural variants
             sv_jobid = submit_sv(
-                base_path, align_path, sv_path, familyid, project, "", align_jobid,
+                base_path,
+                align_path,
+                sv_path,
+                familyid,
+                project,
+                "",
+                align_jobid,
             )
             # smv: small variants
             smv_jobid = submit_smv(
-                base_path, align_path, smv_path, familyid, project, "", align_jobid,
+                base_path,
+                align_path,
+                smv_path,
+                familyid,
+                project,
+                "",
+                align_jobid,
             )
         elif step == "align":
             # align
