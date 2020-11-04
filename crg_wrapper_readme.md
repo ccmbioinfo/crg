@@ -41,14 +41,15 @@ When the sample info file has more than one project, the script assumes that the
 
 -s: All the options will use the input read from sample info file, and perform necessary directory creations/soft-linking using helper bash scripts. Reporting for smv and sv will be carried out even if HPO file for that family is not found in ~/gene_data/HPO folder.
 
-Reports/steps not included: 
-  * sv prioritization using `~/crg/crg.sv.prioritize.sh`
-  * panel and panel-flank100k reports, since this definitely needs HPO
-  * adding HPO terms to smv reports (`python3 ~/cre/add_hpo_terms_to_wes.py <HPO.tsv> <family>.wes.regular.<YYYY-MM-DD>.csv`)
-
 - 'all': submits job for alignment first, followed by jobs for smv and sv in parallel
 - 'smv': submits job for smv
 - 'sv': submits job for sv
+
+Reports/steps not included in this wrapper: 
+  * sv prioritization using `~/crg/crg.sv.prioritize.sh`
+  * panel and panel-flank100k reports, since this definitely needs HPO
+  * adding HPO terms to smv reports (`python3 ~/cre/add_hpo_terms_to_wes.py <HPO.tsv> <family>.wes.regular.<YYYY-MM-DD>.csv`)
+  * cnv merging and comparison with SV calls
 
 -d: Absolute path to directory where main `<family>` directory and other sub-directories will be created.
 
