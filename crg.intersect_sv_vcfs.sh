@@ -10,9 +10,15 @@ if [ -z $1 ]; then
 	exit
 fi
 
+if [ -z $2 ]; then
+	echo "Specify type (filter or unfiltered) as second argument to script"
+	exit
+fi
+
 TODAY=`date +%Y-%m-%d`
-FAMILY_ID=$1
-OUT=${FAMILY_ID}.wgs.sv.${TODAY}.tsv
+FAMILY_ID=$family
+TYPE=$type
+OUT=${FAMILY_ID}.${TYPE}.wgs.sv.${TODAY}.tsv
 
 GENE_DATA=${HOME}/gene_data
 HGMD=${GENE_DATA}/HGMD_2018/hgmd_pro.db
