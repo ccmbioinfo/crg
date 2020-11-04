@@ -167,3 +167,6 @@ bcftools view -i 'ALT="<DEL>"' 159_CH0315.pass.vcf.gz | bcftools query -f '%CHRO
 cat 159_CH0315.erds+_db20171204_20180815_3213_annotated.tsv |  awk '$5 ~/DEL/{print $2"\t"$3"\t"$4}'  > 159.tcag.del.bed
 bedtools intersect -a 159.tcag.dup.bed -b 159.metasv.dup.bed -f 0.5 -wo -r | wc -l
 ```
+
+## crg wrapper
+Use wrapper script to submit and run most basic portions of the pipeline (align, variant calling) for single or multiple projects in one go. Please refer to `crg_wrapper_readme.md` for more details.
