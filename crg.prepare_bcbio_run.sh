@@ -2,7 +2,14 @@
 
 # prepares family for bcbio run when input files are family_sample.bam or family_sample_1/2.fq.gz
 echo "Parameters:"
-family=$1
+
+#when this script is called from Python, Bash fails to split arguments on space
+#using read is compatible when run from both command-line and Python
+#$@ has all arguments passed to script
+
+read -r family analysis <<< $(echo $@ | awk '{print $1, $2;}')
+
+#family=$1
 
 echo "family="$family
 # analysis:
@@ -13,7 +20,7 @@ echo "family="$family
 # -sv: no align, bam has to be cleaned after aligning to decoy, call SV, use a bed file for SV regions
 # -small_variants
 # -validate
-analysis=$2
+#analysis=$2
 
 echo "analysis="$analysis
 
@@ -36,9 +43,9 @@ done < samples.txt
 
 #default template
 template=~/crg/config/crg.bcbio.default.yaml
-if [ -n "$2" ]
+if [ -n "$analysis" ]
 then
-    template=~/crg/config/crg.bcbio.$2.yaml
+    template=~/crg/config/crg.bcbio.$analysis.yaml
 fi
 
 echo "Using config template: " $template
