@@ -17,7 +17,7 @@ Run a single step or all steps of crg pipeline
 -d path, --dir path Absolute path to base directory where family directory
 and bcbio sub-directories will be created
 
--f: Sample information for the project(s) is read from a three column TAB-seperated file. See ".tsv" files in `crg/crg_wrapper/test` folder.
+-f: Sample information for the project(s) is read from a __three__ column TAB-seperated file. See ".tsv" files in `crg/crg_wrapper/test` folder.
 
 - 1st column: This should be `<project>_<sampleid>`
 - 2nd column: input path to CRAM file or read1 FASTQ(must have a "\_R1" pattern in filename). If there are more than one FASTQ file for read1, fastq column must be comma-seperated filenames for read 1 (currently, this expects that both the ends have same number of FASTQ files)
@@ -37,9 +37,14 @@ When the sample info file has more than one project, the script assumes that the
 | ---------- | ------- | ---------- |
 | 112_GF     |         | 112_GF.bam |
 
--t: The input type can be 'bam' or 'fastq' for align step and only 'bam' for sv and smv steps.
+-t: The input type can be 'bam' or 'fastq' for align step and only 'bam' for sv and smv steps. Pass "fastq" even for CRAM files (this is implicitly handled under fastq type using extension)
 
--s: All the options will use the input read from sample info file, and perform necessary directory creations/soft-linking using helper bash scripts. Reporting for smv and sv will be carried out only if a HPO file for that family is found in ~/gene_data/HPO folder.
+-s: All the options will use the input read from sample info file, and perform necessary directory creations/soft-linking using helper bash scripts. Reporting for smv and sv will be carried out even if HPO file for that family is not found in ~/gene_data/HPO folder.
+
+Reports/steps not included: 
+  * sv prioritization using `~/crg/crg.sv.prioritize.sh`
+  * panel and panel-flank100k reports, since this definitely needs HPO
+  * adding HPO terms to smv reports (`python3 ~/cre/add_hpo_terms_to_wes.py <HPO.tsv> <family>.wes.regular.<YYYY-MM-DD>.csv`)
 
 - 'all': submits job for alignment first, followed by jobs for smv and sv in parallel
 - 'smv': submits job for smv
@@ -49,14 +54,14 @@ When the sample info file has more than one project, the script assumes that the
 
 ## Example
 
-1. 'sv' and 'smv' can be run in parallel, since there are no conflict in directory structures
+1. 'sv' and 'smv' can be run in parallel, since there are no conflicts in directory structures
 
 ```bash
 crg_wrapper.py -f 111.tsv -t bam -s smv -d /hpf/c4r/wgs
 crg_wrapper.py -f 111.tsv -t bam -s sv -d /hpf/c4r/wgs
 ```
 
-2. If running all three steps for a project, it is best to pass '-s all' instead of three seperate commands for each step as it takes care of job chaining (otherwise there will be error while align and sv is run in parallel, as they both depend on the `bcbio-align` directory)
+2. If running all three steps for a project, it is best to pass '-s all' instead of three separate commands for each step as it takes care of job chaining (otherwise there will be error while align and sv is run in parallel, as they both depend on the `bcbio-align` directory)
 
 ```bash
 crg_wrapper.py -f 111.tsv -t bam -s all -d /hpf/c4r/wgs
@@ -81,4 +86,4 @@ crg_wrapper.py -f 111.tsv -t bam -s align -d /hpf/c4r/wgs
 3. Add 'cram' to '-t' explicitly. Currently, it is read from fastq column and handled internally based on input extension to call `cram2fq.sh`
    - add calls to `cram2bam.sh`
    - reference is hard coded as /hpf/largeprojects/ccmbio/naumenko/tools/bcbio/genomes/Hsapiens/hg19/seq/hg19.fa
-4. Currently, not all steps of small-variant and structural variant reporting is fully automated (requires manual step). Integrate these steps when available.
+4. Currently, not all steps of small-variant and structural variant reporting is fully automated (requires manual steps). Integrate these steps when available.
