@@ -5,16 +5,6 @@
 #PBS -d .
 #PBS -l vmem=10g,mem=10g
 
-# if [ -z $FAMILY ]; then
-# 	echo "Specify family ID as first arguement to script"
-# 	exit
-# fi
-
-# if [ -z $type ]; then
-# 	echo "Specify type (filter or unfiltered) as second argument to script"
-# 	exit
-# fi
-
 TODAY=`date +%Y-%m-%d`
 FAMILY=$1
 
