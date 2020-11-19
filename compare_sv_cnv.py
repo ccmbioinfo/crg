@@ -8,11 +8,12 @@ import re
 def get_sample_names(sv_report, variant_type):
     colnames = sv_report.columns
     samples = [col for col in colnames if 'SV_DETAILS' in col]
-    if variant_type == 'sv':
-        samples = [sample.split('_')[0] + '_' + sample.split('_')[1] for sample in samples]
-    else:
-        #CNV reports have 'RGS' or 'WGS' in the sample name
+    if variant_type == 'cnv' and ('WGS' in samples[0] or 'RGS' in samples[0]):
+        #sometimes tcag cnv reports have '_WGS' or '_RGS' in sample name
         samples = [sample.split('_')[0] + '_' + sample.split('_')[1] + '_' + sample.split('_')[2] for sample in samples]
+    else:    
+        samples = [sample.split('_')[0] + '_' + sample.split('_')[1] for sample in samples]
+        
 
     return samples
 
