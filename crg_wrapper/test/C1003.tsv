@@ -1,0 +1,4 @@
+sampleid	fastq	bam
+C1003_87514	/hpf/largeprojects/ccm_dccforge/dccforge/MEA11672/C1003_CH0017_WGS_files/fastq/H535CCCX2/C1003_CH0017_WGS_S2_L002_R1_001.fastq.gz	
+C1003_CH0017	/hpf/largeprojects/ccm_dccforge/dccforge/MEA11672/C1003_CH0018_WGS_files/fastq/H535CCCX2/C1003_CH0018_WGS_S3_L003_R1_001.fastq.gz	
+C1003_CH0018	/hpf/largeprojects/ccm_dccforge/dccforge/MEA11672/C1003_CH1026_WGS_files/fastq/H535CCCX2/C1003_CH1026_WGS_S1_L001_R1_001.fastq.gz	
