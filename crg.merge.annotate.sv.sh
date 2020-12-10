@@ -26,15 +26,16 @@ metasv_string=$( IFS=$':'; echo "${metasv_jobs[*]}" )
 for f in $FAMILY_*/$FAMILY/final/$FAMILY*
 do
 	SAMPLE="$(echo $f | cut -d'/' -f1)"
-	snpeff_jobs+=($(qsub ~/crg/crg.snpeff.sh -F $f/$SAMPLE/*metasv.filtered.vcf.gz -W depend=afterany:"${metasv_string}"))
+	snpeff_jobs+=($(qsub ~/crg/crg.snpeff.sh -F $f/$SAMPLE/variants.vcf.gz -W depend=afterany:"${metasv_string}"))
 done
 snpeff_string=$( IFS=$':'; echo "${snpeff_jobs[*]}" )
 
-#run svscore on each sample
+
+#run svscore on each sample 
 for f in $FAMILY_*/$FAMILY/final/$FAMILY*
 do
 	SAMPLE="$(echo $f | cut -d'/' -f1)"
-	svscore_jobs+=($(qsub ~/crg/crg.svscore.sh -F $f/$SAMPLE/*snpeff.vcf -W depend=afterany:"${snpeff_string}"))
+	svscore_jobs+=($(qsub ~/crg/crg.svscore.sh -F $f/$SAMPLE/variants.vcf.gz.snpeff.vcf -W depend=afterany:"${snpeff_string}"))
 done
 svscore_string=$( IFS=$':'; echo "${svscore_jobs[*]}" )
 
@@ -46,5 +47,6 @@ echo "Merging SVs with metaSV, annotating with snpeff, scoring with svscore, and
 jobid=$(qsub ~/crg/crg.intersect_sv_vcfs.sh -F $FAMILY  -W depend=afterany:"${svscore_string}")
 
 echo "intersect=$jobid">> ${logfile}
+
 
 
