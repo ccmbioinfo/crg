@@ -21,7 +21,7 @@ details:
     variantcaller:
     - gatk-haplotype
     vcfanno:
-    - /home/helrick/crg/crg.vcfanno.conf
+    - /home/ccmmarvin/crg/crg.vcfanno.conf
   analysis: variant2
   description: 'project_sample'
   files:
