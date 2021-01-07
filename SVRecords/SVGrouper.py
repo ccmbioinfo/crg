@@ -65,7 +65,13 @@ class SVGrouper:
             assert len(vcf_dict['samples']) == 1, "%s contains 0 or more than 1 sample: %s" % (vcf_path, str(vcf_dict['samples']))
             name = vcf_dict.pop('samples')[0]
             sample_names.append(name)
+            
+            # if 'chr' in CHROM field, remove
+            vcf_dict['variants/CHROM'] = [chrom.strip('chr') for chrom in vcf_dict['variants/CHROM']]
 
+            # if 'chr' in CHROM field, remove
+            vcf_dict['variants/CHROM'] = [chrom.strip('chr') for chrom in vcf_dict['variants/CHROM']]
+            
             # drop un-needed fields from vcf, cannot pass in parse_fields to read_vcf() because ANN_gene_id is unknown until ANNTransformer runs
             for key in list(vcf_dict.keys()):
                 if key not in parse_fields:

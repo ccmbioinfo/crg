@@ -66,6 +66,7 @@ def run_metasv(bam, manta, lumpy, wham):
     --assembly_pad=500 \
     --isize_mean {} \
     --disable_assembly \
+    --keep_standard_contigs \
     --isize_sd {}'''.format(SAMPLE, bam, os.getcwd(), lumpy, manta, wham, TMP_DIR, THREADS, insert_stats['mean'], insert_stats['std'])
 
     subprocess.call(cmd, shell=True)
@@ -110,4 +111,3 @@ if __name__ == "__main__":
     SAMPLE = args.sample
 
     run_metasv(abspath(args.bam), abspath(args.manta), abspath(args.lumpy), abspath(args.wham))
-    filter_vcf()

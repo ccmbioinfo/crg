@@ -121,12 +121,19 @@ class SVAnnotator:
 
         for index,row in sample_df.iterrows():
             chr, pos, end = str(row['CHROM']), int(row['POS']), int(row['END'])
+            print(chr, pos, end)
             boundaries = exons[exons['CHROM'] == chr]
-            for breakpoint in 'left', 'right':
-                position = pos if breakpoint == 'left' else end
-                min_distance, min_boundary, gene = find_min_distance(position, boundaries)
-                boundary_distances[breakpoint]['nearest_boundary'].append(gene + '|' + str(min_boundary))
-                boundary_distances[breakpoint]['nearest_distance'].append(min_distance)
+            if len(boundaries) != 0:
+                for breakpoint in 'left', 'right':
+                    position = pos if breakpoint == 'left' else end
+                    min_distance, min_boundary, gene = find_min_distance(position, boundaries)
+                    boundary_distances[breakpoint]['nearest_boundary'].append(gene + '|' + str(min_boundary))
+                    boundary_distances[breakpoint]['nearest_distance'].append(min_distance)
+            else:
+                for breakpoint in 'left', 'right':
+                    # for non-canonical chromosomes or MT
+                    boundary_distances[breakpoint]['nearest_boundary'].append('.')
+                    boundary_distances[breakpoint]['nearest_distance'].append('.')
 
         sample_df['nearestLeftExonBoundary'], sample_df['nearestLeftExonDistance'] = boundary_distances['left']['nearest_boundary'], boundary_distances['left']['nearest_distance']
         sample_df['nearestRightExonBoundary'],sample_df['nearestRightExonDistance'] = boundary_distances['right']['nearest_boundary'], boundary_distances['right']['nearest_distance']
