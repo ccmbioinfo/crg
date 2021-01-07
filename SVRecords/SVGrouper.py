@@ -69,6 +69,9 @@ class SVGrouper:
             # if 'chr' in CHROM field, remove
             vcf_dict['variants/CHROM'] = [chrom.strip('chr') for chrom in vcf_dict['variants/CHROM']]
 
+            # if 'chr' in CHROM field, remove
+            vcf_dict['variants/CHROM'] = [chrom.strip('chr') for chrom in vcf_dict['variants/CHROM']]
+            
             # drop un-needed fields from vcf, cannot pass in parse_fields to read_vcf() because ANN_gene_id is unknown until ANNTransformer runs
             for key in list(vcf_dict.keys()):
                 if key not in parse_fields:
