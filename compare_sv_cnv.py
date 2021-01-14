@@ -30,6 +30,11 @@ def variant_details_to_df(variants, sample_id, variant_type):
     sample_col, details = get_sample_sv_detail_names(sample_id, variant_type)
     variants = variants[[sample_col]].copy()
     variants = variants[variants[sample_col] != '.']
+    # for unfiltered reports, there can be multiple comma-separated
+    # SVs in the SV_DETAILS column; take the first one
+    for index, row in variants[sample_col].items():
+        if len(row.split(':')) != 3:
+            variants[sample_col][index] = row.split(",")[0]
     # split columns
     variants[['CHR', 'COORD', 'SVTYPE']] = variants[sample_col].str.split(':', expand=True)
     variants[['START', 'END']] = variants['COORD'].str.split('-', expand=True)
@@ -152,5 +157,9 @@ if __name__ == "__main__":
         sv = apply_add_tag(sv, 'sv', sv_sample)
         sv = trim_columns(sv)
 
-    cnv.to_csv('{}withSVoverlaps.tsv'.format(cnv_file), index=False, na_rep='nan', sep='\t')
-    sv.to_csv('{}withCNVoverlaps.tsv'.format(sv_file), index=False, na_rep='nan', sep='\t')
+    if 'unfiltered' in sv_file.split('.'):
+        sv.to_csv('{}withCNVoverlaps.tsv'.format(sv_file), index=False, na_rep='nan', sep='\t')
+    else:
+        cnv.to_csv('{}withSVoverlaps.tsv'.format(cnv_file), index=False, na_rep='nan', sep='\t')
+        sv.to_csv('{}withCNVoverlaps.tsv'.format(sv_file), index=False, na_rep='nan', sep='\t')
+
