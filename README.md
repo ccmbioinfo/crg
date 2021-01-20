@@ -147,7 +147,8 @@ TCAG produces CNV calls for each individual using CNVnator and ERDS. To create a
 
 # 8. SV and CNV overlaps
 It is helpful to know if an SV is supported by a CNV call and vice versa, as it provides additional support for that variant being real. To annotate overlaps, run: \
-`python compare_sv_cnv.py -sv <SV report> -cnv <CNV report>` \
+`python3 compare_sv_cnv.py -sv <SV report> -cnv <CNV report>` \
+Note that the script should be run on both the filtered and unfiltered SV report. When the unfiltered SV report is provided as an argument, the CNV report will not be annotated with the SV overlaps. \
 
 ## Result dir structure:
 project(family)_ID:
