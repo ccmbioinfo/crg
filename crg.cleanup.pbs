@@ -17,7 +17,7 @@ mv bcbio-align/${FAMILY}/final/${FAMILY}_*/*bam* .
 mv bcbio-small-variants/${FAMILY}/multiqc .
 
 #remove unecessary folders
-rm -r  bcbio-align/${FAMILY}/final/  bcbio-align/${FAMILY}/work/
+rm -r  bcbio-align/${FAMILY}/final/  bcbio-align/${FAMILY}/work/ bcbio-align/${FAMILY}/input/
 rm -r  bcbio-small-variants/${FAMILY}/sv/
 rm -r remove_decoys
 
