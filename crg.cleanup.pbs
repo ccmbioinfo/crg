@@ -1,0 +1,31 @@
+#!/bin/bash
+#PBS -l walltime=0:5:00,nodes=1:ppn=1
+#PBS -joe .
+#PBS -d .
+#PBS -l vmem=4g,mem=4g
+
+
+#this script is for cleaning up a completed crg run prior to moving
+#results to /hpf/largeprojects/ccm_dccforge/dccdipg/c4r_wgs/results/
+#usage: qsub crg_cleanup.pbs -F <family>
+#run from within top level of crg directory
+
+FAMILY=$1
+
+#move bams and multiqc to top level directory
+mv bcbio-align/${FAMILY}/final/${FAMILY}_*/*bam* .
+mv bcbio-small-variants/${FAMILY}/multiqc .
+
+#remove unecessary folders
+rm -r  bcbio-align/${FAMILY}/final/  bcbio-align/${FAMILY}/work/
+rm -r  bcbio-small-variants/${FAMILY}/sv/
+rm -r remove_decoys
+
+#cleanup bcbio-sv directory
+rm bcbio-sv/${FAMILY}*/${FAMILY}/final/${FAMILY}_*/*bam*
+rm -r bcbio-sv/${FAMILY}*/${FAMILY}/work
+rm -r bcbio-sv/${FAMILY}*/${FAMILY}/final/${FAMILY}_*/qc
+rm -r bcbio-sv/svscoretmp bcbio-sv/*crg* bcbio-sv/snpEff_genes.txt bcbio-sv/snpEff_summary.html bcbio-sv/conf.toml
+
+#cleanup genes directory
+rm genes/*missing* genes/*unsorted*
