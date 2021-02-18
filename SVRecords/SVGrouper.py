@@ -68,9 +68,6 @@ class SVGrouper:
             
             # if 'chr' in CHROM field, remove
             vcf_dict['variants/CHROM'] = [chrom.strip('chr') for chrom in vcf_dict['variants/CHROM']]
-
-            # if 'chr' in CHROM field, remove
-            vcf_dict['variants/CHROM'] = [chrom.strip('chr') for chrom in vcf_dict['variants/CHROM']]
             
             # drop un-needed fields from vcf, cannot pass in parse_fields to read_vcf() because ANN_gene_id is unknown until ANNTransformer runs
             for key in list(vcf_dict.keys()):
@@ -95,6 +92,14 @@ class SVGrouper:
             df['variants/END'] = df['variants/END'].astype(int)
             df = df.drop_duplicates()
 
+            # for BND, make POS=END-1
+            bnd = df['variants/SVTYPE'] == 'BND'
+            df.loc[bnd, ['variants/END','variants/POS']] = df.loc[bnd, ['variants/END','variants/END']].values
+            df['variants/POS'] = [pos - 1 for pos in df['variants/END'].values]
+            df['variants/END'] = df['variants/END'].astype(int)
+            df['variants/POS'] = df['variants/POS'].astype(int)
+            df = df.drop_duplicates()
+
             intervals.extend(df[sample_sv_fields].itertuples(index=False))
 
             if ann_fields:
@@ -103,8 +108,8 @@ class SVGrouper:
         ann_df = pd.concat(ann_dfs).astype(str).rename(columns=self.index_cols).set_index(list(self.index_cols.values())) if ann_fields else pd.DataFrame()
         ann_df = ann_df[~ann_df.index.duplicated(keep='first')] #annotations for the same SV in a vcf can have slighly differing fields (ex. SVSCORE_MEAN)
 
-        for i in intervals:
-            print(i)
+        # for i in intervals:
+        #     print(i)
 
         return BedTool(intervals), ann_df, sample_names
 

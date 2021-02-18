@@ -72,3 +72,15 @@ ${HOME}/crg/cap_report.py ${FAMILY}.unfiltered.wgs.sv.${TODAY}.tsv
 if [[ "$OSTYPE" == *"darwin"* ]]; then
 	open -a 'Microsoft Excel' ${FAMILY}.unfiltered.wgs.sv.${TODAY}.tsv
 fi
+
+MANTA_BND=`ls ${FAMILY}_*/${FAMILY}/final/${FAMILY}*/*manta.BND.vcf.gz | tr '\n' ' '`
+
+#make manta BND report
+echo "${PY} ${HOME}/crg/crg.intersect_sv_vcfs.py -protein_coding_genes=${PROTEIN_CODING_GENES} -exon_bed=${EXON_BED} -hgmd=${HGMD} -hpo=${HPO} -exac=${EXAC} -omim=${OMIM} -biomart=${BIOMART} -gnomad=${GNOMAD} -sv_counts ${MSSNG_MANTA_COUNTS} ${MSSNG_LUMPY_COUNTS} -o=${FAMILY}.wgs.manta.bnd.${TODAY}.tsv -i ${MANTA_BND}"
+${PY} ${HOME}/crg/crg.intersect_sv_vcfs.py -protein_coding_genes=${PROTEIN_CODING_GENES} -exon_bed=${EXON_BED} -hgmd=${HGMD} -hpo=${HPO} -exac=${EXAC} -omim=${OMIM} -biomart=${BIOMART} -gnomad=${GNOMAD} -sv_counts ${MSSNG_MANTA_COUNTS} ${MSSNG_LUMPY_COUNTS} -o=${FAMILY}.wgs.manta.bnd.${TODAY}.tsv -i ${MANTA_BND}
+#NEED TO OUTPUT FILE WITH MANTA BND IN NAME
+${HOME}/crg/cap_report.py ${FAMILY}.wgs.manta.bnd.${TODAY}.tsv
+
+if [[ "$OSTYPE" == *"darwin"* ]]; then
+	open -a 'Microsoft Excel' ${FAMILY}.wgs.manta.bnd.${TODAY}.tsv
+fi
