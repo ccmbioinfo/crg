@@ -92,10 +92,9 @@ class SVGrouper:
             df['variants/END'] = df['variants/END'].astype(int)
             df = df.drop_duplicates()
 
-            # for BND, make POS=END-1
+            # for BND, make POS=END
             bnd = df['variants/SVTYPE'] == 'BND'
-            df.loc[bnd, ['variants/END','variants/POS']] = df.loc[bnd, ['variants/END','variants/END']].values
-            df['variants/POS'] = [pos - 1 for pos in df['variants/END'].values]
+            df.loc[bnd, ['variants/POS']] = df.loc[bnd, ['variants/END']].values
             df['variants/END'] = df['variants/END'].astype(int)
             df['variants/POS'] = df['variants/POS'].astype(int)
             df = df.drop_duplicates()
