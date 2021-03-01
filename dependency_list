@@ -1,0 +1,3 @@
+#conda and other tool dependencies required for setting crg
+python3: ~/crg/compare_sv_cnv.py 
+pybedtools: ~/crg/compare_sv_cnv.py
