@@ -52,9 +52,10 @@ EH = namedtuple('EH', 'pos, motif, gene, size, gt, mean, std, median')
 G1K = {}
 with open(os.path.expanduser("~/crg/1000G_EH_v1.0.tsv")) as f:
     for i in f:
-        annot, mean, std, median = i.strip().split("\t")
-        if not annot in G1K:
-            G1K[annot] = [mean, std, median]
+        if not i.startswith("#"):
+            annot, mean, std, median = i.strip().split("\t")
+            if not annot in G1K:
+                G1K[annot] = [mean, std, median]
 
 eh_gt = {}
 with open(annot_tsv) as f:
