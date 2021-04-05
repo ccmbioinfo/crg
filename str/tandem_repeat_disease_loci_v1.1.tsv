@@ -1,0 +1,60 @@
+Reference PMID	Category	Disorder	Gene	Disease threshold	Motif (reference orientation)	Coordinates (hg19)	Coordinates (hg38)	Mask	Note
+20177394	Polyglutamine coding repeat	SBMA: Spinal and Bulbar Muscular Atrophy	AR	40-55	CAG	chrX:66765159-66765261	chrX:67545317-67545419	FALSE	
+20177394	Polyglutamine coding repeat	HD: Huntington’s disease	HTT	>35	CAG	chr4:3076604-3076667	chr4:3074877-3074940	TRUE	
+20177394	Polyglutamine coding repeat	DRPLA: Dentatorubralpallidouysian atrophy	ATN1	49-88	CAG	chr12:7045880-7045938	chr12:6936717-6936775	FALSE	
+20177394	Polyglutamine coding repeat	SCA1: Spinocerebellar ataxia 1	ATXN1	39-81	CTG	chr6:16327865-16327955	chr6:16327634-16327724	FALSE	
+20177394	Polyglutamine coding repeat	SCA2: Spinocerebellar ataxia 2	ATXN2	>34	CTG	chr12:112036754-112036823	chr12:111598950-111599019	FALSE	
+20177394	Polyglutamine coding repeat	SCA3: Spinocerebellar ataxia 3	ATXN3	>55	CTG	chr14:92537355-92537396	chr14:92071011-92071052	FALSE	
+20177394	Polyglutamine coding repeat	SCA6: Spinocerebellar ataxia 6	CACNA1A	20-29	CTG	chr19:13318673-13318712	chr19:13207859-13207898	FALSE	
+20177394	Polyglutamine coding repeat	SCA7: Spinocerebellar ataxia 7	ATXN7	37-306	CAG	chr3:63898361-63898392	chr3:63912685-63912716	FALSE	
+20177394	Polyglutamine coding repeat	SCA17: Spinocerebellar ataxia 17	TBP	47-63	CAG	chr6:170870995-170871105	chr6:170561907-170562017	FALSE	
+20177394	Polyglutamine coding repeat	KCNN3: no disease association	KCNN3	ND	CTG	chr1:154842317-154842355	chr1:154869841-154869879	FALSE	There are two TRF with motif CTG nearby. The other is hg38 chr1:154869723-154869766. Do we know that chr1:154869841-154869879 is the right one?
+20177394	Polyalanine coding repeat	HOXD13: Synpolydactyly	HOXD13	22-29	GCG	chr2:176957786-176957827	chr2:176093058-176093099	FALSE	
+20177394	Polyalanine coding repeat	OPMD: Oculopharyngeal Muscular Dystrophy	PABPN1	12-17	GCG	chr14:23790681-23790711	chr14:23321472-23321502	TRUE	
+20177394	Polyalanine coding repeat	CBFA1:cleidocranial dysplasia	RUNX2	27	GCG	chr6:45390487-45390531	chr6:45422750-45422794	FALSE	
+20177394	Polyalanine coding repeat	ZIC2:holoprosencephaly	ZIC2	25	GCG	chr13:100637703-100637748	chr13:99985449-99985494	FALSE	
+20177394	Polyalanine coding repeat	HOXA13: Hand-Foot-Genital Syndrome	HOXA13	24-26	CGC	chr7:27239545-27239585	chr7:27199926-27199966	FALSE	
+20177394	Polyalanine coding repeat	FOXL2:Blepharophimosis/Ptosis/Epicanthus inversus syndrome type II	FOXL2	22-24	CGC	chr3:138664864-138664901	chr3:138946022-138946059	FALSE	https://github.com/mcfrith/tandem-genotypes/blob/master/hg38-disease-tr.txt gives the motif as GCAGCT. Looking at the region, the correct motif seems quite unclear to me.
+20177394	Polyalanine coding repeat	ARX: infantile spasm syndrome	ARX	17-23	CGC	chrX:25031771-25031814	chrX:25013654-25013697	FALSE	
+20177394	Non-coding repeat	CTG18.1: no confirmed disease association	TCF4	800-2100	CAG	chr18:53253385-53253460	chr18:55586154-55586229	FALSE	
+20177394	Non-coding repeat	DM1: myotonic dystrophy type 1	DMPK/DMPKas	>90-6500	CAG	chr19:46273463-46273524	chr19:45770205-45770266	FALSE	
+20177394	Non-coding repeat	FRDA: Friedreich’s ataxia	FXN	>200	GAA	chr9:71652203-71652220	chr9:69037287-69037304	FALSE	
+20177394	Non-coding repeat	SCA8: Spinocerebellar ataxia 8	ATXN8/ATXN8OS	>110	CTG	chr13:70713516-70713561	chr13:70139384-70139429	FALSE	
+20177394	Non-coding repeat	SCA12: Spinocerebellar ataxia 12	PPP2R2B	55-78	CTG	chr5:146258291-146258322	chr5:146878728-146878759	FALSE	
+20177394	Non-coding repeat	SCA31: Spinocerebellar ataxia 31	TK2/BEAN	110	TAAAA,TGGAA	chr16:66524300-66524369	chr16:66490397-66490466	FALSE	
+20177394	Non-coding repeat	HDL2: Huntington’s disease-like 2	JPH3	51-57	CTG	chr16:87637889-87637935	chr16:87604283-87604329	FALSE	
+20177394	Non-coding repeat	MAB21L1:no confirmed disease association	MAB21L1	>50	CTG	chr13:36050434-36050492	chr13:35476297-35476355	FALSE	
+20177394	Non-coding repeat	DM2: myotonic dystrophy type 2	ZNF9/CNBP	75-11000	CAGG	chr3:128891416-128891541	chr3:129172573-129172698	FALSE	
+20177394	Non-coding repeat	SCA10: Spinocerebellar ataxia 10	ATXN10	800-4500	ATTCT,AATCT	chr22:46191235-46191304	chr22:45795355-45795424	FALSE	
+20177394	Non-coding repeat	EPM1:epilepsy progressive myoclonic	CSTB	30-75	CGCGGGGCGGGG	chr21:45196324-45196360	chr21:43776443-43776479	FALSE	
+20177394	Non-coding repeat	RELN: Risk of Autism	RELN	12-13	GCC	chr7:103629804-103629834	chr7:103989357-103989387	FALSE	
+20177394	Fragile site-associated repeat - folate-sensitive	FRAXA: fragile X syndrome	FMR1/FMR4	230-2000	CGG	chrX:146993555-146993629	chrX:147912037-147912111	FALSE	
+20177394	Fragile site-associated repeat - folate-sensitive	FRAXE: fragile X syndrome	FMR2	200-900	CCG	chrX:147582125-147582273	chrX:148500605-148500753	FALSE	
+20177394	Fragile site-associated repeat - folate-sensitive	FRAXF: No confirmed disease association	FAM11A	306-1008	CCG	chrX:148713390-148713437	chrX:149631707-149631781	FALSE	
+20177394	Fragile site-associated repeat - folate-sensitive	FRA10A: No confirmed disease association	FRA10AC1	>200	CCG	chr10:95462280-95462305	chr10:93702523-93702548	FALSE	
+20177394	Fragile site-associated repeat - folate-sensitive	FRA11B: Jacobsen syndrome	CBL2	100-1000	CGG	chr11:119077000-119077033	chr11:119206290-119206323	FALSE	
+31332380	Non-coding repeat	NIID: Neuronal intranuclear inclusion disease	NOTCH2NLC	>134	GGC		chr1:149390802-149390842	FALSE	
+31230722; 30926972	Non-coding repeat	CANVAS: Cerebellar ataxia, neuropathy, and vestibular areflexia syndrome	RFC1	400-2000	AAAAG,AAGGG	chr4:39350045-39350103	chr4:39348425-39348483	FALSE	
+29100084	Polyalanine coding repeat	CCHS: Central hypoventilation syndrome, congenital	PHOX2B	>24	CCG	chr4:41747990-41748054	chr4:41745973-41746037	FALSE	
+29507423	Non-coding repeat	BAFME: Epilepsy, familial adult myoclonic, 1	SAMD12	440-3680	AAAAT,TGAAA	chr8:119379052-119379157	chr8:118366813-118366918	FALSE	
+29100084	Non-coding repeat	FTDALS1: Frontotemporal dementia and/or amyotrophic lateral sclerosis 1	C9orf72	>31	CCCCGG	chr9:27573483-27573544	chr9:27573485-27573546	TRUE	
+24360810	Non-coding repeat	RCPS: Richieri-Costa-Pereira syndrome	EIF4A3	14-16	GCCGCTGCCGACCTCGCTGT	chr17:78120792-78120938	chr17:80146993-80147139	FALSE	
+29100084	Non-coding repeat	SCA36: Spinocerebellar ataxia 36	NOP56	>650	GGGCCT	chr20:2633379-2633426	chr20:2652733-2652780	FALSE	https://github.com/mcfrith/tandem-genotypes/blob/master/hg38-disease-tr.txt gives the coordinates as hg38 chr20:2652733-2652757
+29100084	Polyalanine coding repeat	Mental retardation, X-linked, with isolated growth hormone deficiency	SOX3	>22	CGG	chrX:139586483-139586517	chrX:140504318-140504352	FALSE	
+30970188	Non-coding repeat	Ataxia, glutaminase deficiency	GLS	>680	GCA	chr2:191745599-191745646	chr2:190880873-190880920	FALSE	
+30554721	Non-coding repeat	FRA16A: Baratela-Scott syndrome	XYLT	>72-120	CCG	chr16:17564765-17564779	chr16:17470908-17470922	FALSE	
+31332380	Non-coding repeat	Oculopharyngeal myopathy with leukoencephalopathy	LOC642361/NUTM2B-AS1	700	CGG	chr10:81586142-81586159	chr10:79826386-79826403	FALSE	
+31332380	Non-coding repeat	Oculopharyngodistal myopathy	LRP12	138-171	CCG	chr8:105601193-105601227	chr8:104588965-104588999	FALSE	
+25196122	Non-coding repeat	FRA7A: autistic spectrum disorder	ZNF713		CGG	chr7:55955294-55955332	chr7:55887601-55887639	FALSE	
+24763282	Non-coding repeat	FRA2A: variable developmental anomalies	AFF3	>300	GCC	chr2:100721261-100721286	chr2:100104799-100104824	FALSE	
+17236128	Non-coding repeat	FRA12A: mental retardation	DIP2B	156-323	CGG	chr12:50898787-50898807	chr12:50505004-50505024	FALSE	
+18160775	Fragile site-associated repeat - folate-sensitive	FRA11A: No confirmed disease association	C11orf80	500	GGC	chr11:66512291-66512316	chr11:66744820-66744845	FALSE	
+28686858	Non-coding repeat	SCA37	DAB1	(ATTTT)60-79(ATTTC)31-75(ATTTT)58-90	AAAAT,GAAAT	chr1:57832716-57832797	chr1:57367044-57367125	FALSE	
+29507423	Non-coding repeat	FAME6	TNRC6A	(TTTTA)22(TTTCA)exp(TTTTA)exp > 5.6kb than control	TTTTA,TTTCA	chr16:24624760-24624853	chr16:24613439-24613532	FALSE	
+29507423	Non-coding repeat	FAME7	RAPGEF2	(TTTTA)exp(TTTCA)exp(TTTTa)n > 11.1kb than control	TTTTA,TTTCA	chr4:160263679-160263770	chr4:159342527-159342618	FALSE	
+20177394	Non-coding repeat	h-Ras: increased risk of ovarian cancer	HRAS	rare alleles	GGCGTCCCCTGGAGAGAAGGGCGAGTGT	chr11:530405-531236	chr11:530405-531236	FALSE	
+20177394	Polyaspartic coding repeat	COMP: Multiple Skeletal dysplasias	COMP	4,6,7	GTC	chr19:18896845-18896859	chr19:18786035-18786049	FALSE	
+31664034	Non-coding repeat	FAME2: Familial adult myoclonic epilepsy	STARD7		AAAAT,AAATG	chr2:96862805-96862862	chr2:96197067-96197124	FALSE	
+31539032	Non-coding repeat	BAFME4: benign adult familial myoclonic epilepsy type 4 	YEATS2		TTTTA,TTTCA	chr3:183429965-183430014	chr3:183712177-183712226	FALSE	
+31664039	Non-coding repeat	FAME3: Familial adult myoclonic epilepsy	MARCH6	>660	TTTTA,TTTCA	chr5:10356451-10356523	chr5:10356339-10356411	FALSE	
+32413282	Non-coding repeat	Oculopharyngodistal myopathy	GIPC1	>32	GCC	chr19:14606853-14606897	chr19:14496041-14496085	FALSE	According to the paper, for the disease threshold 32 was the maximum number of repeat units in an unaffected individual, while 72 was the minimum number of repeat units in an affected individual.

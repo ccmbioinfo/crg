@@ -4,12 +4,12 @@
 #PBS -d .
 
 ref=/hpf/largeprojects/ccmbio/naumenko/tools/bcbio/genomes/Hsapiens/GRCh37d5/seq/GRCh37d5.fa;
-catalog=/hpf/largeprojects/ccmbio_ephemeral/ExpansionHunter/tandem_repeat_disease_loci_v1.1.hg19.masked.json;
-scripts=/hpf/largeprojects/ccmbio/aarthi/proj_CHEO/CRG/str;
+catalog=~/crg/str/tandem_repeat_disease_loci_v1.1.hg19.masked.json;
+scripts=~/crg/str;
 
 #original annotation file from Brett:/hpf/largeprojects/ccmbio_ephemeral/ExpansionHunter/tandem_repeat_disease_loci_v1.1.tsv
 #em_dashes from above tsv were causing issues when splitting annotation in eh_sample_report.py; so manually replaced those with hyphen and stored in dir below
-tr_annot=/hpf/largeprojects/ccmbio/aarthi/proj_CHEO/CRG/str/tandem_repeat_disease_loci_v1.1.tsv;
+tr_annot=~/crg/str/tandem_repeat_disease_loci_v1.1.tsv;
 
 
 if [ -z $family ]; then family=$1; fi;
