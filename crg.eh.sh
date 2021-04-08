@@ -4,12 +4,13 @@
 #PBS -d .
 
 ref=/hpf/largeprojects/ccmbio/naumenko/tools/bcbio/genomes/Hsapiens/GRCh37d5/seq/GRCh37d5.fa;
-catalog=~/crg/str/tandem_repeat_disease_loci_v1.1.hg19.masked.json;
+EH_files=/hpf/largeprojects/ccm_dccforge/dccdipg/Common/annotation/ExpansionHunter;
+catalog=${EH_files}/tandem_repeat_disease_loci_v1.1.hg19.masked.json;
 scripts=~/crg/str;
 
 #original annotation file from Brett:/hpf/largeprojects/ccmbio_ephemeral/ExpansionHunter/tandem_repeat_disease_loci_v1.1.tsv
 #em_dashes from above tsv were causing issues when splitting annotation in eh_sample_report.py; so manually replaced those with hyphen and stored in dir below
-tr_annot=~/crg/str/tandem_repeat_disease_loci_v1.1.tsv;
+tr_annot=${EH_files}/tandem_repeat_disease_loci_v1.1.tsv;
 
 
 if [ -z $family ]; then family=$1; fi;
@@ -62,7 +63,8 @@ echo "COMMAND: python ${scripts}/add_gene+threshold_to_EH_column_headings2.py $t
 python ${scripts}/add_gene+threshold_to_EH_column_headings2.py $tsv ${tr_annot} > $annot
 
 #transpose and seperate columns to final report
-xlsx="${outdir}/${family}_EH_v1.1.xlsx";
+date=`date +%Y-%m-%d`
+xlsx="${outdir}/${family}.EH-v1.1.${date}.xlsx";
 echo "generating family-wise report: $xlsx"
 echo "COMMAND: python ~/crg/eh_sample_report.py ${annot} ${xlsx}"
 python ~/crg/eh_sample_report.py ${annot} ${xlsx}
