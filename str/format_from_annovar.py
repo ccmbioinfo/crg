@@ -17,7 +17,7 @@ outfile = sys.argv[3]
 omim = pd.read_csv(omim_file, sep="\t", header=[0,1])
 omim.columns = [j if i.startswith("Otherinfo") else i for i, j in omim.columns ]
 omim.rename(columns=lambda x: x.replace(".refGene",""), inplace=True)
-omim_col = ['omim_inheritance', 'omim_phenotype','chr#start#end' ]
+omim_col = ['omim_inheritance', 'omim_phenotype' ]
 
 gnomad = pd.read_csv(gnomad_file, sep="\t", header=[0,1])
 gnomad.columns = [j if i.startswith("Otherinfo") else i for i, j in gnomad.columns ]
