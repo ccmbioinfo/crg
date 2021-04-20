@@ -7,6 +7,7 @@
 scripts=~/crg/str;
 EHDN_files=/hpf/largeprojects/ccm_dccforge/dccdipg/Common/annotation/ExpansionHunterDenovo;
 g1k_outlier="${EHDN_files}/1000G_outlier";
+g1k_manifest="${EHDN_files}/manifest.1000G.txt";
 omim=${EHDN_files}/OMIM_hgnc_join_omim_phenos_2020-08-05.tsv;
 gnomad=${EHDN_files}/gnomad.v2.1.1.lof_metrics.by_gene.txt;
 annovar=/hpf/largeprojects/ccm_dccforge/dccdipg/Common/crg2-non-conda-tools/annovar;
@@ -40,8 +41,8 @@ conda activate str
 ##format above output for annovar annotation
 echo "STEP3.1: format DBSCAN output for ANNOVAR annotation"
 merge_tsv=`ls -t ${outpath}/merged.rare.expansions.[0-9]*.tsv | head -n1`;
-echo -e "CMD:python ${scripts}/format_for_annovar.py ${outlier_tsv} ${merge_tsv}\n"
-python ${scripts}/format_for_annovar.py ${outlier_tsv} ${merge_tsv}
+echo -e "CMD:python ${scripts}/format_for_annovar.py ${outlier_tsv} ${merge_tsv} ${g1k_manifest}\n"
+python ${scripts}/format_for_annovar.py ${outlier_tsv} ${merge_tsv} ${g1k_manifest}
 
 echo "STEP3.2: annotate with OMIM"
 annovar_input=`ls -t ${outpath}/merged.rare.EHdn.expansion.[0-9]*tsv | head -n1`; #incase there > 1 file because of multiple runs
