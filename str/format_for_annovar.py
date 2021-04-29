@@ -43,9 +43,9 @@ with open(dbscan_out) as f:
         i = i.strip().split("\t")
         key = "#".join(i[0:3])
         outlier = re.split(";",i[4])
-        print(all_g1k_sample(outlier),outlier)
+        #print(all_g1k_sample(outlier),outlier)
         if all_g1k_sample(outlier):
-            print(all_g1k_sample(outlier),outlier)
+            #print(all_g1k_sample(outlier),outlier)
             merged_exp.append(dbscan(chr=i[0],start=i[1],end=i[2],motif=i[3],outliers=i[4],key=key))
 
 ehdn = namedtuple("ehdn", "motif outliers size ref chr start end a1000g key")
