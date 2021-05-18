@@ -67,6 +67,16 @@ Also outputs sample.tsv file for annotation in TCAG with DGV frequencies.\
 
 DGV and DDD columns are annotated by [AnnotSV](http://lbgi.fr/AnnotSV/).
 
+# 7. Call short-tandem repeats (STR) (Run after Step 2.)
+Create STR reports for known(ExpansionHunter) and denovo(ExpansionHunterDenovo) repeats.
+1. Run `sh crg.str.sh <familyID>` from one level outside where crg project directory is set up. Checks for aligned input BAMs in folders `<familyID>/` and `<familyID>/bcbio-align/`
+2. This script will create 2 Excel reports in the following directories, 
+	`<familyID>/str/expansion_hunter/<familyId>.EH-v1.1.<DATE>.xlsx`
+	`<familyID>/str/expansion_hunter_denovo/outliers/<familyID>.EHDN.<DATE>.xlsx`
+3. [Report columns]
+4. All custom scripts required for generating the reports are placed in `crg/str` and all the paths to annotation files are hard-coded inside bash scripts `crg/crg.eh.sh` and `crg/crg.ehdn.sh`.
+
+
 # Individual report columns:
 - CHR
 - POS

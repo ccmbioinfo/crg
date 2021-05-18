@@ -1,7 +1,7 @@
 #!/bin/bash
 
-x=`samtools idxstats $1 | grep "X"`;
-y=`samtools idxstats $1 | grep "Y"`;
+x=`samtools idxstats $1 | egrep  "X|chrX"`;
+y=`samtools idxstats $1 | egrep  "Y|chrY"`;
 xcov=`echo $x | awk '{ printf("%0.5f", $3/$2); }'`;
 ycov=`echo $y | awk '{ printf("%0.5f", $3/$2); }'`;
 
