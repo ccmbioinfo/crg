@@ -29,7 +29,7 @@ if [ $pipeline == "crg" ]; then
     fi;
     outdir="${family}/str/expansion_hunter_denovo";
 else
-    dir="mapped/*.bam"
+    dir="decoy_rm/*.bam"
     outdir="str/EHDN";
 fi;
 
@@ -44,7 +44,7 @@ for i in `ls $dir`; do
     if [ $pipeline == "crg" ]; then 
         prefix=`basename $i -ready.bam`;
     else
-        prefix=`basename $i .bam`; 
+        prefix=`basename $i .bam | cut -d "." -f1`; 
     fi
     reads=`readlink -f $i`;
     ehdn_prefix="${outdir}/${prefix}";
