@@ -5,7 +5,7 @@ rm(list=ls())
 #### Rscript mergeExpansions.R --ehdn /hpf/largeprojects/tcagstor/users/btrost/papers/STRs/Qatar_ASD/output_regions.min2.1000G+SSC+MSSNG+QASD.txt 
 #### --outlier dbscan.tsv --outpath output/
 trf <- "/hpf/largeprojects/ccmbio/aarthi/proj_CHEO/CRG/str/ExpansionAnalysisPackage/UCSC_simple_repeats_hg19_coord_motif.tsv"
-source("/hpf/largeprojects/ccmbio/aarthi/proj_CHEO/CRG/str/ExpansionAnalysisPackage/ExpansionAnalysisFunctions.R")
+source(path.expand("~/crg/str/ExpansionAnalysisFunctions.R"))
 
 #### read arguments from command line
 args = commandArgs(trailingOnly=TRUE)

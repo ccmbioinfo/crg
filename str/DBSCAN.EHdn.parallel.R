@@ -2,7 +2,7 @@ rm(list = ls())
 #### to run
 #### Rscript DBSCAN.EHdn.parallel.R --infile /hpf/largeprojects/tcagstor/users/btrost/papers/STRs/Qatar_ASD/output_regions.min2.1000G+SSC+MSSNG+QASD.txt 
 #### --outpath output/ --samplelist samples.txt --outlierlist outliers.txt
-a1000g <- readLines("/hpf/largeprojects/ccmbio/aarthi/proj_CHEO/CRG/str/ExpansionAnalysisPackage/1000G.samples.txt")
+a1000g <- readLines("/hpf/largeprojects/ccm_dccforge/dccdipg/Common/annotation/ExpansionHunterDenovo/1000G.samples.txt")
 
 ###("/hpf/largeprojects/tcagstor/users/worrawat/Expansion/1000G.samples.txt")
 
