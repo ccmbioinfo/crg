@@ -22,6 +22,8 @@ def outlier_gt(threshold, gt_dict):
         y = x.split("/") if "/" in x else x
         if not "." in y:
             y = max(list(map(int,y))) if isinstance(y,list) else int(y)
+        else:
+            return " "
         if y:
             if "(" in threshold or " " in threshold:
                 continue
@@ -92,7 +94,6 @@ header = ["#location", "repeat motif", "gene", "disease threshold"] + ["GT."+i f
 worksheet.write_row(0, 0, header)
 row = 1
 for i in trf:
-        # for i in eh_gt[sample]:
         info = trf[i][samples[0]]
         content = [info.pos, info.motif, info.gene, info.size]
         content += [ trf[i][s].gt for s in samples ]          
