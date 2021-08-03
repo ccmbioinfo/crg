@@ -15,7 +15,10 @@ def main(protein_coding_genes, exon_bed, hgmd_db, hpo, exac, omim, biomart, gnom
     protein_coding_ENSG = make_exon_gene_set(protein_coding_genes)
 
     print("Grouping like structural variants ...")
-    sv_records = SVGrouper(vcfs, ann_fields=SVScore_cols + [MetaSV_col])
+    try:
+        sv_records = SVGrouper(vcfs, ann_fields=SVScore_cols + [MetaSV_col])
+    except KeyError:
+        sv_records = SVGrouper(vcfs, ann_fields=SVScore_cols)
     sample_cols = [ col for col in sv_records.df.columns if col != MetaSV_col ]
     sample_genotype_cols = [col for col in sample_cols if col.endswith('_GENOTYPE')]
 
@@ -42,6 +45,8 @@ def main(protein_coding_genes, exon_bed, hgmd_db, hpo, exac, omim, biomart, gnom
             sv_records.df[col] = "na"
 
     # format and rearrange the columns
+    if MetaSV_col not in sv_records.df.columns:
+        sv_records.df['variants/NUM_SVTOOLS'] = '1'
     sv_records.df = sv_records.df[ [col for col in sample_cols if col not in set(SVScore_cols + sample_genotype_cols + ['N_SAMPLES', 'Ensembl Gene ID']) ] + \
     [ 'variants/SVLEN', ] + \
     [ MetaSV_col ] + \

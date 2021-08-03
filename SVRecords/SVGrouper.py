@@ -56,7 +56,7 @@ class SVGrouper:
         ann_dfs = []
 
         index_fields = list(self.index_cols.keys()) #CHR POS STOP needs to be first 3 columns for creation of BedTool instance
-        sample_sv_fields = index_fields + ['calldata/GT', 'variants/ANN_Gene_ID', 'samples']
+        sample_sv_fields = index_fields + ['variants/ALT'] + ['calldata/GT', 'variants/ANN_Gene_ID', 'samples']
         parse_fields = list(set(sample_sv_fields + ann_fields))
 
         for vcf_path in vcf_paths:
@@ -69,8 +69,8 @@ class SVGrouper:
             # if 'chr' in CHROM field, remove
             vcf_dict['variants/CHROM'] = [chrom.strip('chr') for chrom in vcf_dict['variants/CHROM']]
 
-            # if 'chr' in CHROM field, remove
-            vcf_dict['variants/CHROM'] = [chrom.strip('chr') for chrom in vcf_dict['variants/CHROM']]
+            # grab alt allele
+            vcf_dict['variants/ALT'] = [alt[0] for alt in vcf_dict['variants/ALT']]
             
             # drop un-needed fields from vcf, cannot pass in parse_fields to read_vcf() because ANN_gene_id is unknown until ANNTransformer runs
             for key in list(vcf_dict.keys()):
@@ -95,6 +95,13 @@ class SVGrouper:
             df['variants/END'] = df['variants/END'].astype(int)
             df = df.drop_duplicates()
 
+            # for BND, make POS=END
+            bnd = df['variants/SVTYPE'] == 'BND'
+            df.loc[bnd, ['variants/POS']] = df.loc[bnd, ['variants/END']].values
+            df['variants/END'] = df['variants/END'].astype(int)
+            df['variants/POS'] = df['variants/POS'].astype(int)
+            df = df.drop_duplicates()
+
             intervals.extend(df[sample_sv_fields].itertuples(index=False))
 
             if ann_fields:
@@ -103,8 +110,8 @@ class SVGrouper:
         ann_df = pd.concat(ann_dfs).astype(str).rename(columns=self.index_cols).set_index(list(self.index_cols.values())) if ann_fields else pd.DataFrame()
         ann_df = ann_df[~ann_df.index.duplicated(keep='first')] #annotations for the same SV in a vcf can have slighly differing fields (ex. SVSCORE_MEAN)
 
-        for i in intervals:
-            print(i)
+        # for i in intervals:
+        #     print(i)
 
         return BedTool(intervals), ann_df, sample_names
 
@@ -113,11 +120,11 @@ class SVGrouper:
 
         for l in bedtool.intersect(bedtool, wa=True, wb=True, F=reciprocal_overlap, f=reciprocal_overlap):
 
-            ref_chr, ref_start, ref_end, ref_svtype, ref_gt, ref_genes, ref_name, \
-            samp_chr, samp_start, samp_end, samp_svtype, samp_gt, samp_genes, samp_name = l
+            ref_chr, ref_start, ref_end, ref_svtype, ref_alt, ref_gt, ref_genes, ref_name, \
+            samp_chr, samp_start, samp_end, samp_svtype, samp_alt, samp_gt, samp_genes, samp_name = l
 
-            ref_interval = (ref_chr, ref_start, ref_end, ref_svtype)
-            samp_interval = (samp_chr, samp_start, samp_end, samp_svtype, samp_gt, samp_name)
+            ref_interval = (ref_chr, ref_start, ref_end, ref_svtype, ref_alt)
+            samp_interval = (samp_chr, samp_start, samp_end, samp_svtype, samp_alt, samp_gt, samp_name)
 
             if (samp_interval not in already_grouped_intervals) and (ref_svtype == samp_svtype):
                 self._add_interval(ref_interval, ref_genes, samp_interval)
@@ -126,13 +133,13 @@ class SVGrouper:
         self.df.sort_index(inplace=True)
 
     def _add_interval(self, ref_interval, ref_genes, samp_interval):
-        samp_chr, samp_start, samp_end, samp_svtype, samp_gt, samp_name = samp_interval
+        samp_chr, samp_start, samp_end, samp_svtype, samp_alt, samp_gt, samp_name = samp_interval
 
         #Get reference to row
-        if ref_interval not in self.df.index:
+        if ref_interval[:-1] not in self.df.index:
             #make new row
-            self.df.loc[ref_interval, :] = np.nan
-            row = self.df.loc[ref_interval, :]
+            self.df.loc[ref_interval[:-1],  :] = np.nan
+            row = self.df.loc[ref_interval[:-1], :]
             row['N_SAMPLES'] = 0
             row['Ensembl Gene ID'] = ref_genes
 
@@ -141,14 +148,17 @@ class SVGrouper:
                 row["%s_SV_DETAILS" % name] = []
                 row["%s_GENOTYPE" % name] = []
         else:
-            row = self.df.loc[ref_interval, :]
+            row = self.df.loc[ref_interval[:-1], :]
 
         #Set values for row
         if row[samp_name] == 0:
             row['N_SAMPLES'] += 1
             row[samp_name] = 1
 
-        row["%s_SV_DETAILS" % samp_name].append('{}:{}-{}:{}'.format(samp_chr, samp_start, samp_end, samp_svtype))
+        if samp_svtype == 'BND':
+            row["%s_SV_DETAILS" % samp_name].append('{}:{}-{}:{}:{}'.format(samp_chr, samp_start, samp_end, samp_svtype, samp_alt))
+        else:
+            row["%s_SV_DETAILS" % samp_name].append('{}:{}-{}:{}'.format(samp_chr, samp_start, samp_end, samp_svtype))
         row["%s_GENOTYPE" % samp_name].append(samp_gt)
     
     def write(self, outfile_name):

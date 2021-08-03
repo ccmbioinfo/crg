@@ -52,23 +52,27 @@ do
 	tabix $FILE
 done
 
-#make filtered report
-echo "${PY} ${HOME}/crg/crg.intersect_sv_vcfs.py -protein_coding_genes=${PROTEIN_CODING_GENES} -exon_bed=${EXON_BED} -hgmd=${HGMD} -hpo=${HPO} -exac=${EXAC} -omim=${OMIM} -biomart=${BIOMART} -gnomad=${GNOMAD} -sv_counts ${MSSNG_MANTA_COUNTS} ${MSSNG_LUMPY_COUNTS} -o=${FAMILY}.wgs.sv.${TODAY}.tsv -i ${FILTERED_FILES}"
-${PY} ${HOME}/crg/crg.intersect_sv_vcfs.py -protein_coding_genes=${PROTEIN_CODING_GENES} -exon_bed=${EXON_BED} -hgmd=${HGMD} -hpo=${HPO} -exac=${EXAC} -omim=${OMIM} -biomart=${BIOMART} -gnomad=${GNOMAD} -sv_counts ${MSSNG_MANTA_COUNTS} ${MSSNG_LUMPY_COUNTS} -o=${FAMILY}.wgs.sv.${TODAY}.tsv -i ${FILTERED_FILES}
+MANTA_BND=`ls ${FAMILY}_*/${FAMILY}/final/${FAMILY}*/*manta.BND.vcf.gz.snpeff.vcf.svscore.vcf | tr '\n' ' '`
 
-${HOME}/crg/cap_report.py ${FAMILY}.wgs.sv.${TODAY}.tsv
+REPORT_CMD=`echo ${PY} ${HOME}/crg/crg.intersect_sv_vcfs.py -protein_coding_genes=${PROTEIN_CODING_GENES} -exon_bed=${EXON_BED} -hgmd=${HGMD} -hpo=${HPO} -exac=${EXAC} -omim=${OMIM} -biomart=${BIOMART} -gnomad=${GNOMAD} -sv_counts ${MSSNG_MANTA_COUNTS} ${MSSNG_LUMPY_COUNTS}`
+for type in filtered bnd
+do
+	if [ $type = "filtered" ]; then
+		echo $REPORT_CMD "-o=${FAMILY}.wgs.sv.${TODAY}.tsv -i ${FILTERED_FILES}"
+		$REPORT_CMD -o=${FAMILY}.wgs.sv.${TODAY}.tsv -i ${FILTERED_FILES}
+	elif [ $type = "unfiltered" ]; then
+		echo $REPORT_CMD "-o=${FAMILY}.unfiltered.wgs.sv.${TODAY}.tsv -i ${IN_FILES}"
+		$REPORT_CMD -o=${FAMILY}.unfiltered.wgs.sv.${TODAY}.tsv -i ${IN_FILES}
+	else
+		echo $REPORT_CMD "-o=${FAMILY}.manta.bnd.wgs.sv.${TODAY}.tsv -i ${MANTA_BND}"
+		$REPORT_CMD -o=${FAMILY}.manta.bnd.wgs.sv.${TODAY}.tsv -i ${MANTA_BND}
+	fi
+done
 
-if [[ "$OSTYPE" == *"darwin"* ]]; then
-	open -a 'Microsoft Excel' ${FAMILY}.wgs.sv.${TODAY}.tsv
-fi
-
-
-#make unfiltered report
-echo "${PY} ${HOME}/crg/crg.intersect_sv_vcfs.py -protein_coding_genes=${PROTEIN_CODING_GENES} -exon_bed=${EXON_BED} -hgmd=${HGMD} -hpo=${HPO} -exac=${EXAC} -omim=${OMIM} -biomart=${BIOMART} -gnomad=${GNOMAD} -sv_counts ${MSSNG_MANTA_COUNTS} ${MSSNG_LUMPY_COUNTS} -o=${FAMILY}.unfiltered.wgs.sv.${TODAY}.tsv -i ${IN_FILES}"
-${PY} ${HOME}/crg/crg.intersect_sv_vcfs.py -protein_coding_genes=${PROTEIN_CODING_GENES} -exon_bed=${EXON_BED} -hgmd=${HGMD} -hpo=${HPO} -exac=${EXAC} -omim=${OMIM} -biomart=${BIOMART} -gnomad=${GNOMAD} -sv_counts ${MSSNG_MANTA_COUNTS} ${MSSNG_LUMPY_COUNTS} -o=${FAMILY}.unfiltered.wgs.sv.${TODAY}.tsv -i ${IN_FILES}
-
-${HOME}/crg/cap_report.py ${FAMILY}.unfiltered.wgs.sv.${TODAY}.tsv
-
-if [[ "$OSTYPE" == *"darwin"* ]]; then
-	open -a 'Microsoft Excel' ${FAMILY}.unfiltered.wgs.sv.${TODAY}.tsv
-fi
+for report in ${FAMILY}.wgs.sv.${TODAY}.tsv ${FAMILY}.unfiltered.wgs.sv.${TODAY}.tsv ${FAMILY}.manta.bnd.wgs.sv.${TODAY}.tsv
+do
+	${HOME}/crg/cap_report.py $report
+	if [[ "$OSTYPE" == *"darwin"* ]]; then
+	open -a 'Microsoft Excel' $report
+	fi	
+done
