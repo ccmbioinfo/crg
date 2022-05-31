@@ -3,11 +3,27 @@
 #PBS -joe
 #PBS -d .
 
+if [ -z $EHDN ]
+then
+    EHDN=/hpf/largeprojects/ccmbio/arun/Tools/EHDN.TCAG/ExpansionHunterDenovo-v0.7.0
+fi
 
-EHDN=/hpf/largeprojects/ccmbio/arun/Tools/EHDN.TCAG/ExpansionHunterDenovo-v0.7.0;
-ref=/hpf/largeprojects/ccmbio/naumenko/tools/bcbio/genomes/Hsapiens/GRCh37d5/seq/GRCh37d5.fa;
-scripts=~/crg/str;
-EHDN_files=/hpf/largeprojects/ccm_dccforge/dccdipg/Common/annotation/ExpansionHunterDenovo;
+if [ -z $EHDN_files ]
+then
+    EHDN_files=/hpf/largeprojects/ccm_dccforge/dccdipg/Common/annotation/ExpansionHunterDenovo
+fi
+
+if [ -z $ref ]
+then
+    ref=/hpf/largeprojects/ccmbio/naumenko/tools/bcbio/genomes/Hsapiens/GRCh37d5/seq/GRCh37d5.fa
+fi
+
+if [ -z $script_dir ]
+then
+    script_dir=~/cre
+fi
+
+scripts="${script_dir}/str";
 g1k_manifest="${EHDN_files}/manifest.1000G.txt";
 
 
@@ -48,7 +64,7 @@ for i in `ls $dir`; do
     fi
     reads=`readlink -f $i`;
     ehdn_prefix="${outdir}/${prefix}";
-    echo -e "STEP1: /hpf/largeprojects/ccmbio/arun/Tools/EHDN.TCAG/ExpansionHunterDenovo-v0.7.0 --reference $ref --reads $reads --output-prefix $ehdn_prefix --min-anchor-mapq 50 --max-irr-mapq 40 \n"
+    echo -e "STEP1: ExpansionHunterDenovo-v0.7.0 --reference $ref --reads $reads --output-prefix $ehdn_prefix --min-anchor-mapq 50 --max-irr-mapq 40 \n"
     $EHDN --reference $ref --reads $reads --output-prefix $ehdn_prefix --min-anchor-mapq 50 --max-irr-mapq 40 &
     echo -e "${prefix}\tcase\t${ehdn_prefix}.json" >> $manifest;
 
